@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "test_atcoder_sample_cpp",
+      "type": "shell",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "command": "${workspaceFolder}\\script\\cpptest.ps1",
+      "args": ["${fileBasenameNoExtension}"]
+    }
+  ]
+}
