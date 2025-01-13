@@ -1,47 +1,24 @@
+#include <algorithm>
 #include <iostream>
 #include <vector>
-#include <map>
-#include <queue>
-#include <set>
+
 using namespace std;
 
-int main()
-{
+int main() {
   int N;
   cin >> N;
 
-  map<int, int> freq;
-  set<int> y;
-
-  for (int i = 0; i < N; i++)
-  {
-    int a;
+  vector<int> A(N);
+  for (auto &&a : A)
     cin >> a;
-    y.insert(a);
-    freq[a]++;
-  }
 
-  queue<int> que;
-  int sum = 0;
-  int cnt = 0;
-  auto it = y.begin();
-  que.push(*it);
-  it = y.erase(it);
-  while (it != y.end())
-  {
-    while (!que.empty() && que.front() * 2 <= *it)
-    {
-      int a = que.front();
-      cnt += freq[a];
-      que.pop();
-    }
-    sum += cnt * freq[*it];
+  long ans = 0;
+  for (const auto a : A)
+    // a / 2 以下の餅の個数 = a / 2 を超える餅と先頭との距離
+    ans += upper_bound(A.begin(), A.end(), a / 2) - begin(A);
 
-    que.push(*it);
+  // 合計が答え
+  cout << ans << endl;
 
-    it = y.erase(it);
-  }
-
-  cout << sum << "\n";
   return 0;
 }
