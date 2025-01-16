@@ -1,5 +1,6 @@
 {
 	"main": {
+		"prefix": "main",
 		"body": [
 			"#include <iostream>",
 			"#include <vector>",
@@ -21,6 +22,7 @@
 		]
 	},
 	"bfs": {
+		"prefix": "bfs",
 		"body": [
 			"using Graph = vector<vector<int>>;",
 			"",
@@ -69,6 +71,7 @@
 		],
 	},
 	"bin": {
+		"prefix": "bin",
 		"body": [
 			"ll binary_search(ll ok, ll ng, function<bool(ll)> condition) {",
 			"    while (abs(ok - ng) > 1) {",
@@ -105,6 +108,7 @@
 		],
 	},
 	"divirsions": {
+		"prefix": "divisors",
 		"body": [
 			"vector<long long> calc_divisors(long long N) {",
 			" vector<long long> res;",
@@ -123,6 +127,7 @@
 		]
 	},
 	"prime_fac": {
+		"prefix": "prime_fac",
 		"body": [
 			"vector<pair<long long, long long>> prime_factorize(long long N) {",
 			"    vector<pair<long long, long long>> res;",
