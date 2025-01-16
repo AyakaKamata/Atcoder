@@ -1,6 +1,5 @@
 {
 	"main": {
-		"prefix": "main",
 		"body": [
 			"#include <iostream>",
 			"#include <vector>",
@@ -22,20 +21,7 @@
 		]
 	},
 	"bfs": {
-		"prefix": "bfs",
 		"body": [
-			"#include <iostream>",
-			"#include <vector>",
-			"#include <queue>",
-			"#include <map>",
-			"#include <set>",
-			"#include <algorithm>",
-			"#include <cmath>",
-			"#include <string>",
-			"#include <utility>",
-			"using namespace std;",
-			"using ll = long long;",
-			"",
 			"using Graph = vector<vector<int>>;",
 			"",
 			"void bfs(const Graph& G, int start, vector<int>& dist) {",
@@ -84,18 +70,6 @@
 	},
 	"bin": {
 		"body": [
-			"#include <iostream>",
-			"#include <vector>",
-			"#include <queue>",
-			"#include <map>",
-			"#include <set>",
-			"#include <algorithm>",
-			"#include <cmath>",
-			"#include <string>",
-			"#include <utility>",
-			"using namespace std;",
-			"using ll = long long;",
-			"",
 			"ll binary_search(ll ok, ll ng, function<bool(ll)> condition) {",
 			"    while (abs(ok - ng) > 1) {",
 			"        ll mid = (ok + ng) / 2;",
@@ -129,5 +103,59 @@
 			"    return 0;",
 			"}"
 		],
+	},
+	"divirsions": {
+		"body": [
+			"vector<long long> calc_divisors(long long N) {",
+			" vector<long long> res;",
+			"",
+			" for (long long i = 1; i * i <= N; ++i) {",
+			"  if (N % i != 0) continue;",
+			"",
+			"  res.push_back(i);",
+			"",
+			"  if (N / i != i) res.push_back(N / i);",
+			" }",
+			"",
+			" sort(res.begin(), res.end());",
+			" return res;",
+			"}",
+		]
+	},
+	"prime_fac": {
+		"body": [
+			"vector<pair<long long, long long>> prime_factorize(long long N) {",
+			"    vector<pair<long long, long long>> res;",
+			"",
+			"    for (long long p = 2; p * p <= N; ++p) {",
+			"        if (N % p != 0) {",
+			"            continue;",
+			"        }",
+			"",
+			"        int e = 0;",
+			"        while (N % p == 0) {",
+			"            ++e;",
+			"            N /= p;",
+			"        }",
+			"",
+			"        res.emplace_back(p, e);",
+			"    }",
+			"",
+			"    if (N != 1) {",
+			"        res.emplace_back(N, 1);",
+			"    }",
+			"    return res;",
+			"}",
+			"",
+			"int main() {",
+			"    int n;",
+			"    cin >> n;",
+			"    const auto &pf = prime_factorize(n);",
+			"    for (const auto &p : pf) {",
+			"        cout << p.first << \" \" << p.second << endl;",
+			"    }",
+			"    return 0;",
+			"}"
+		]
 	}
 }
