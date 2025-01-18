@@ -90,6 +90,7 @@
     "syncstream": "cpp",
     "thread": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "text_encoding": "cpp"
   },
 }
