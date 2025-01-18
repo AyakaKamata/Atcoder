@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <queue>
@@ -8,73 +9,56 @@
 #include <utility>
 #include <vector>
 
-
 using namespace std;
 using ll = long long;
 
-const ll INF = 1LL << 60;
-template <class T> inline bool chmin(T &a, T b) {
-  if (a > b) {
-    a = b;
-    return true;
-  }
-  return false;
-}
-template <class T> inline bool chmax(T &a, T b) {
-  if (a < b) {
-    a = b;
-    return true;
-  }
-  return false;
-}
-long long calculateItems(long long M, const vector<long long>& P) {
-    long long totalItems = 0;
-    for (long long p : P) {
-        // 商品の購入可能な最大個数を二分探索
-        long long left = 0, right = 1e9; // 商品の購入数の範囲
-        while (left <= right) {
-            long long mid = (left + right) / 2;
-            if (mid * mid * p <= M) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
-        totalItems += right; // rightが最大の購入可能個数
+ll custom_binary_search(ll ok, ll ng, function<bool(ll)> condition) {
+  while (abs(ok - ng) > 1) {
+    ll mid = (ok + ng) / 2;
+    if (condition(mid)) {
+      ok = mid;
+    } else {
+      ng = mid;
     }
-    return totalItems;
+  }
+  return ok;
 }
+
+using i128 = __int128_t;
+
 
 int main() {
-    long long N, M;
+    ll N, M;
     cin >> N >> M;
-    vector<long long> P(N);
-    for (long long i = 0; i < N; i++) {
-        cin >> P[i];
+
+    vector<ll> P(N);
+    for (auto &p : P) cin >> p;
+
+    // 二分探索による最大 x の計算
+    auto condition = [&](ll mid) {
+        i128 sm = 0;
+        for (ll p : P) {
+            ll t = (mid / p + 1) / 2;
+            sm += (i128)t * t * p;
+            if (sm > M) return false;
+        }
+        return sm <= M;
+    };
+
+    ll ok = custom_binary_search(0, M + 1, condition);
+
+    // 最大個数の計算
+    ll cnt = 0;
+    for (ll p : P) {
+        ll t = (ok / p + 1) / 2;
+        cnt += t;
+        M -= t * t * p;
     }
 
-    // 二分探索で合計購入数を求める
-    long long low = 0, high = M, answer = 0;
-    while (low <= high) {
-        long long mid = (low + high) / 2;
-        long long totalCost = 0;
+    // 余った金額で追加購入
+    cnt += M / (ok + 1);
 
-        for (long long p : P) {
-            // 各商品について、購入可能な最大個数を計算
-            long long k = sqrt(mid / p); // kを一旦計算
-            if (k * k * p > mid) k--;   // 調整
-            totalCost += k;
-        }
-
-        if (totalCost <= M) {
-            answer = mid;
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
-    }
-
-    cout << answer << endl;
+    cout << cnt << endl;
 
     return 0;
 }
