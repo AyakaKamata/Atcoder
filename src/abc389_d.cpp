@@ -8,47 +8,28 @@
 #include <utility>
 #include <vector>
 
-
 using namespace std;
 using ll = long long;
 
 const ll INF = 1LL << 60;
-template <class T> inline bool chmin(T &a, T b) {
-  if (a > b) {
-    a = b;
-    return true;
-  }
-  return false;
-}
-template <class T> inline bool chmax(T &a, T b) {
-  if (a < b) {
-    a = b;
-    return true;
-  }
-  return false;
-}
 
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
 int main() {
-  double R;
-  cin >> R;
-  int count = 0;
-  int n = floor(2*R/sqrt(2));
-  if (n % 2 == 0) {
-    --n;
+  ll r;
+  cin >> r;
+  auto in = [&](ll a, ll b) {
+    return (2 * a + 1) * (2 * a + 1) + (2 * b + 1) * (2 * b + 1) <= 4 * r * r;
+  };
+  ll cnt = 0;
+  ll up = r - 1;
+  ll res = (r - 1) * 4 + 1;
+  for (ll x = 1; in(x, 1); x++) {
+    while (!in(x, up))
+      --up;
+    cnt += up;
   }
-  // cout << n << endl;
-  for (int i = -n/2; i <= n/2; ++i) {
-    for (int j = n/2+1; j <= R; ++j) {
-      if (sqrt((i + 0.5) * (i + 0.5) + (j + 0.5) * (j + 0.5)) <= R &&
-          sqrt((i + 0.5) * (i + 0.5) + (j - 0.5) * (j - 0.5)) <= R &&
-          sqrt((i - 0.5) * (i - 0.5) + (j + 0.5) * (j + 0.5)) <= R &&
-          sqrt((i - 0.5) * (i - 0.5) + (j - 0.5) * (j - 0.5)) <= R) {
-        ++count;
-      }
-    }
-  }
-
-
-  cout << count*4+n*n << endl;
-  return 0;
+  res += cnt * 4;
+  cout << res << endl;
 }
