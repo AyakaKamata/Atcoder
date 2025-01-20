@@ -13,4 +13,4 @@ if (! (Test-Path $test_dir)) {
 
 # コンパイルとテスト実行
 g++ src/$problem_name.cpp -o bin/$problem_name.out && oj test -c bin/$problem_name.out -d $test_dir && oj s $url src/$problem_name.cpp && Remove-Item -Force -Path $test_dir -ErrorAction SilentlyContinue
-
+Remove-Item -Force -Path bin/* -ErrorAction SilentlyContinue
