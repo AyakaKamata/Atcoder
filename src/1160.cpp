@@ -70,16 +70,16 @@ public:
   vector<vector<bool>> seen;
   vector<vector<ll>> f_o, l_o;
   ll ptr;
-  ll comp;
+  ll cnt;
 
   DFS(const matrix &G)
       : seen(G.size(), vector<bool>(G[0].size(), false)),
         f_o(G.size(), vector<ll>(G[0].size(), 0)),
-        l_o(G.size(), vector<ll>(G[0].size(), 0)), ptr(0), comp(0) {
+        l_o(G.size(), vector<ll>(G[0].size(), 0)), ptr(0), cnt(0) {
     for (ll i = 0; i < (ll)G.size(); i++)
       rep(j, 0, G[0].size()) {
-        if (!f_o[i][j] && G[i][j]) {
-          comp++;
+        if (!f_o[i][j] && G[i][j] == 1) {
+          cnt++;
           dfs(G, i, j);
         }
       }
@@ -92,7 +92,7 @@ public:
       ll nh = h + dx[i];
       ll nw = w + dy[i];
       if (nh >= 0 && nh < (ll)G.size() && nw >= 0 && nw < (ll)G[0].size()) {
-        if (!seen[nh][nw] && G[nh][nw]) {
+        if (!seen[nh][nw] && G[nh][nw] == 1) {
           dfs(G, nh, nw);
         }
       }
@@ -100,7 +100,7 @@ public:
     l_o[h][w] = ++ptr;
   }
 
-  void output() const { cout << comp << endl; }
+  void output() const { cout << cnt << endl; }
 };
 
 int main() {
