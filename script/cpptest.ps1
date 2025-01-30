@@ -1,7 +1,7 @@
 $problem_name = $Args[0]
 $test_dir = "test/$problem_name"
 
-if ($problem_name.Substring(0, 5) -eq "ALDS1") {
+if (($problem_name -is [string] -and $problem_name.Substring(0, 5) -eq "ALDS1" )-or $problem_name -match '^\d') {
   $url = "https://onlinejudge.u-aizu.ac.jp/problems/$problem_name"
 } else {
   $base_url = $problem_name.Replace("_", "-").Substring(0, $problem_name.Length - 2)
@@ -17,7 +17,7 @@ if (! (Test-Path $test_dir)) {
 
 
 # コンパイルとテスト実行
-if ($problem_name.Substring(0, 5) -eq "ALDS1"){
+if (($problem_name -is [string] -and $problem_name.Substring(0, 5) -eq "ALDS1" )-or $problem_name -match '^\d'){
   g++ src/$problem_name.cpp -o bin/$problem_name.out && oj test -c bin/$problem_name.out -d $test_dir && Remove-Item -Force -Path $test_dir -ErrorAction SilentlyContinue
 }else{
   g++ src/$problem_name.cpp -o bin/$problem_name.out && oj test -c bin/$problem_name.out -d $test_dir && oj s $url src/$problem_name.cpp && Remove-Item -Force -Path $test_dir -ErrorAction SilentlyContinue
