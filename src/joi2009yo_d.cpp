@@ -9,14 +9,13 @@ using namespace std;
 using ll = long long;
 using ld = long double;
 using i128 = __int128_t;
-
-typedef pair<ll, ll> pll;
-typedef pair<ld, ld> pld;
-typedef vector<vector<ll>> matrix;
-typedef vector<vector<ld>> matrixld;
-typedef vector<ll> onevec;
-typedef vector<ld> onevecld;
-typedef set<ll> lset;
+using pll = pair<ll, ll>;
+using pld = pair<ld, ld>;
+using matrix = vector<vector<ll>>;
+using matrixld = vector<vector<ld>>;
+using onevec = vector<ll>;
+using onevecld = vector<ld>;
+using lset = set<ll>;
 
 const ll INFL = 1LL << 60;
 template <class T> bool chmin(T &a, T b) {
@@ -58,47 +57,56 @@ template <typename T> T pdistance(const vector<pair<T, T>> &xy, int i, int j) {
 template <typename T> void print(T value, int precision) {
   cout << fixed << setprecision(precision) << value << endl;
 }
+
+const int dx[8] = {1, 0, -1, 0, 1, 1, -1, -1};
+const int dy[8] = {0, 1, 0, -1, 1, -1, 1, -1};
 /*--------------------------------------------------------
                          \0w0/
                         OwOkaomoji
                      ｡˚ (¦3ꇤ )3 ⋆｡˚✩
 ----------------------------------------------------------*/
-ll n;
-vector<bool> seen;
-onevec f_o;
-onevec l_o;
 
-void dfs(const matrix &G, ll v, ll &ptr) {
-  seen[v] = true;
-  f_o[v] = ++ptr;
-  fore(n_v, G[v]) {
-    if (!seen[n_v]) {
-      dfs(G, n_v, ptr);
+class DFS {
+public:
+  vector<vector<bool>> seen;
+  ll max_depth;
+
+  DFS(const matrix &G)
+      : seen(G.size(), vector<bool>(G[0].size(), false)), max_depth(0) {
+    for (ll i = 0; i < (ll)G.size(); i++) {
+      for (ll j = 0; j < (ll)G[0].size(); j++) {
+        if (G[i][j] == 1) {
+          dfs(G, i, j, 1);
+        }
+      }
     }
   }
-  l_o[v] = ++ptr;
-}
+
+  void dfs(const matrix &G, ll h, ll w, ll d) {
+    seen[h][w] = true;
+    chmax(max_depth, d);
+
+    rep(i, 0, 4) {
+      ll nh = h + dx[i];
+      ll nw = w + dy[i];
+      if (nh >= 0 && nh < (ll)G.size() && nw >= 0 && nw < (ll)G[0].size()) {
+        if (!seen[nh][nw] && G[nh][nw] == 1) {
+          dfs(G, nh, nw, d + 1);
+        }
+      }
+    }
+    seen[h][w] = false;
+  }
+
+  void output() const { cout << max_depth << endl; }
+};
+
 int main() {
-  cin >> n;
-  matrix G(n, vector<ll>());
-  rep(i, 0, n) {
-    ll u, k;
-    cin >> u >> k;
-    u--;
-    rep(j, 0, k) {
-      ll v;
-      cin >> v;
-      v--;
-      G[u].push_back(v);
-    }
-  }
-  ll ptr = 0;
-  seen.resize(n, false);
-  f_o.resize(n, 0);
-  l_o.resize(n, 0);
-
-  for (int i = 0; i < n; i++)
-    if (! seen[i]) dfs(G, i, ptr);
-  rep(i, 0, n) { printf("%d %d %d\n", i + 1, f_o[i], l_o[i]); }
+  ll W, H;
+  cin >> W >> H;
+  matrix G(H, vector<ll>(W));
+  rep(i, 0, H) rep(j, 0, W) { cin >> G[i][j]; }
+  DFS dfs_solver(G);
+  dfs_solver.output();
   return 0;
 }
