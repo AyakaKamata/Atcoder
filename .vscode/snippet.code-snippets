@@ -36,7 +36,7 @@
 			"  }",
 			"  return false;",
 			"}",
-			"template <typename T> ll llsize(const T &container) {",
+			"template <typename T> ll lsize(const T &container) {",
 			"  return static_cast<ll>(container.size());",
 			"}",
 			"template <typename T> bool ifbit(T number, ll bit) {",
