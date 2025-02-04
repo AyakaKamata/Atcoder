@@ -765,5 +765,29 @@
 			"    return 0;",
 			"}",
 		]
+	},
+	"dp_matrix": {
+		"prefix": "dp_matrix",
+		"body": [
+			"int main() {",
+			"    ll N, W;",
+			"    cin >> N >> W;",
+			"",
+			"    vector<ll> v(N), w(N);",
+			"    rep(i, 0, N) cin >> v[i] >> w[i];",
+			"",
+			"    vector<ll> dp(W + 1, 0);",
+			"",
+			"    rep(i, 0, N) {",
+			"        rrep(j, W, w[i]) { // 後ろから更新する 重複ありなら前から、jをw[i]からWまで回す",
+			"            chmax(dp[j], dp[j - w[i]] + v[i]);",
+			"        }",
+			"    }",
+			"",
+			"    cout << *max_element(all(dp)) << endl;",
+			"",
+			"    return 0;",
+			"}"
+		]
 	}
 }
