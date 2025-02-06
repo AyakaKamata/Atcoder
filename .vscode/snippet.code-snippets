@@ -825,8 +825,8 @@
 			"}"
 		]
 	},
-	"3D DP Template": {
-		"prefix": "dp3d",
+	"dp_3d": {
+		"prefix": "dp_3d",
 		"body": [
 			"#include <bits/stdc++.h>",
 			"#define rep(i, a, b) for (ll i = a; i < b; i++)",
