@@ -7,6 +7,10 @@
 			"#define rrep(i, a, b) for (ll i = a; i >= b; i--)",
 			"#define fore(i, a) for (auto &i : a)",
 			"#define all(x) (x).begin(), (x).end()",
+			"#define YES cout << \"Yes\" << endl",
+			"#define NO cout << \"No\" << endl",
+			"#define YN { cout << \"Yes\" << endl; } else { cout << \"No\" << endl; } // if(a==b)YN;",
+			"#define fail cout << -1 << endl",
 			"#pragma GCC optimize(\"-O3\")",
 			"",
 			"using namespace std;",
@@ -86,6 +90,15 @@
 			"        }",
 			"    }",
 			"    return res;",
+			"}",
+			"template <typename T> bool isprime(T N) {",
+			" if (N < 2)",
+			"  return false;",
+			" for (T i = 2; i * i <= N; i++) {",
+			" if (N % i == 0)",
+			"   return false;",
+			" }",
+			" return true;",
 			"}",
 			"/*--------------------------------------------------------",
 			"                         \\0w0/ ",
@@ -186,7 +199,7 @@
 			"}"
 		],
 	},
-	"divirsions": {
+	"divisors": {
 		"prefix": "divisors",
 		"body": [
 			"vector<ll> calc_divisors(ll N) {",
