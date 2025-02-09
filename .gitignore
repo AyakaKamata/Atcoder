@@ -1,5 +1,6 @@
 bin/
 test/
+vis.html
 # Prerequisites
 *.d
 
