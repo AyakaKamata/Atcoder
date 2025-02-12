@@ -93,7 +93,7 @@ string strrep(const string &s, const string &from, const string &to) {
   }
   return res;
 }
-template <typename T> bool is_prime(T N) {
+template <typename T> bool isprime(T N) {
   if (N < 2)
     return false;
   for (T i = 2; i * i <= N; i++) {
@@ -113,14 +113,9 @@ int main() {
   ll n;
   in(n);
   onevec a(n);
-  fore(i, a) in(i);
-  ll newgcd = gcd(a[0], a[1]);
-
-  rep(i, 2, n) {
-
-    ll tmp = gcd(newgcd, a[i]);
-    newgcd = tmp;
-  }
-  out(newgcd);
+  fore(i, a) { in(i); }
+  ll res = a[0];
+  rep(i, 1, n) res = lcm(res, a[i]);
+  out(res);
   return 0;
 }

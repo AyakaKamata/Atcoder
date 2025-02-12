@@ -5,7 +5,13 @@
 #define all(x) (x).begin(), (x).end()
 #define YES cout << "Yes" << endl
 #define NO cout << "No" << endl
-#define YN { cout << "Yes" << endl; } else { cout << "No" << endl; } // if(a==b)YN;
+#define YN                                                                     \
+  {                                                                            \
+    cout << "Yes" << endl;                                                     \
+  }                                                                            \
+  else {                                                                       \
+    cout << "No" << endl;                                                      \
+  } // if(a==b)YN;
 #define fail cout << -1 << endl
 #pragma GCC optimize("-O3")
 
@@ -74,27 +80,27 @@ const int dx[8] = {1, 0, -1, 0, 1, 1, -1, -1};
 const int dy[8] = {0, 1, 0, -1, 1, -1, 1, -1};
 string strrep(const string &s, const string &from, const string &to) {
 
-    unordered_map<char, char> trans;
-    for (size_t i = 0; i < from.size(); ++i) {
-        trans[from[i]] = to[i];
-    }
+  unordered_map<char, char> trans;
+  for (size_t i = 0; i < from.size(); ++i) {
+    trans[from[i]] = to[i];
+  }
 
-    string res = s;
-    for (char &c : res) {
-        if (trans.count(c)) {
-            c = trans[c];
-        }
+  string res = s;
+  for (char &c : res) {
+    if (trans.count(c)) {
+      c = trans[c];
     }
-    return res;
+  }
+  return res;
 }
 template <typename T> bool is_prime(T N) {
- if (N < 2)
-  return false;
- for (T i = 2; i * i <= N; i++) {
- if (N % i == 0)
-   return false;
- }
- return true;
+  if (N < 2)
+    return false;
+  for (T i = 2; i * i <= N; i++) {
+    if (N % i == 0)
+      return false;
+  }
+  return true;
 }
 /*--------------------------------------------------------
                          \0w0/
@@ -104,8 +110,17 @@ template <typename T> bool is_prime(T N) {
 
 int main() {
 
-    ll a,b;
-    in(a,b);
-    out(gcd(a,b));
-    return 0;
+  ll n;
+  in(n);
+  onevec a(n);
+  fore(i, a) in(i);
+  ll newgcd = gcd(a[0], a[1]);
+
+  rep(i, 2, n) {
+
+    ll tmp = gcd(newgcd, a[i]);
+    newgcd = tmp;
+  }
+  out(newgcd);
+  return 0;
 }

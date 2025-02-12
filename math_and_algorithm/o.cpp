@@ -5,13 +5,7 @@
 #define all(x) (x).begin(), (x).end()
 #define YES cout << "Yes" << endl
 #define NO cout << "No" << endl
-#define YN                                                                     \
-  {                                                                            \
-    cout << "Yes" << endl;                                                     \
-  }                                                                            \
-  else {                                                                       \
-    cout << "No" << endl;                                                      \
-  } // if(a==b)YN;
+#define YN { cout << "Yes" << endl; } else { cout << "No" << endl; } // if(a==b)YN;
 #define fail cout << -1 << endl
 #pragma GCC optimize("-O3")
 
@@ -80,64 +74,38 @@ const int dx[8] = {1, 0, -1, 0, 1, 1, -1, -1};
 const int dy[8] = {0, 1, 0, -1, 1, -1, 1, -1};
 string strrep(const string &s, const string &from, const string &to) {
 
-  unordered_map<char, char> trans;
-  for (size_t i = 0; i < from.size(); ++i) {
-    trans[from[i]] = to[i];
-  }
-
-  string res = s;
-  for (char &c : res) {
-    if (trans.count(c)) {
-      c = trans[c];
+    unordered_map<char, char> trans;
+    for (size_t i = 0; i < from.size(); ++i) {
+        trans[from[i]] = to[i];
     }
-  }
-  return res;
+
+    string res = s;
+    for (char &c : res) {
+        if (trans.count(c)) {
+            c = trans[c];
+        }
+    }
+    return res;
 }
 template <typename T> bool is_prime(T N) {
-  if (N < 2)
-    return false;
-  for (T i = 2; i * i <= N; i++) {
-    if (N % i == 0)
-      return false;
-  }
-  return true;
+ if (N < 2)
+  return false;
+ for (T i = 2; i * i <= N; i++) {
+ if (N % i == 0)
+   return false;
+ }
+ return true;
 }
 /*--------------------------------------------------------
                          \0w0/
                         OwOkaomoji
                      ｡˚ (¦3ꇤ )3 ⋆｡˚✩
 ----------------------------------------------------------*/
-vector<pair<ll, ll>> prime_factorize(ll N) {
-  vector<pair<ll, ll>> res;
-
-  for (ll p = 2; p * p <= N; ++p) {
-    if (N % p != 0) {
-      continue;
-    }
-
-    ll e = 0;
-    while (N % p == 0) {
-      ++e;
-      N /= p;
-    }
-
-    res.emplace_back(p, e);
-  }
-
-  if (N != 1) {
-    res.emplace_back(N, 1);
-  }
-  return res;
-}
 
 int main() {
 
-  ll n;
-  cin >> n;
-  const auto &pf = prime_factorize(n);
-  for (const auto &p : pf) {
-    rep(i, 0, p.second) cout << p.first << " ";
-  }
-  cout << endl;
-  return 0;
+    ll a,b;
+    in(a,b);
+    out(gcd(a,b));
+    return 0;
 }

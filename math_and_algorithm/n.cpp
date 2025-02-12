@@ -93,7 +93,7 @@ string strrep(const string &s, const string &from, const string &to) {
   }
   return res;
 }
-template <typename T> bool isprime(T N) {
+template <typename T> bool is_prime(T N) {
   if (N < 2)
     return false;
   for (T i = 2; i * i <= N; i++) {
@@ -107,21 +107,37 @@ template <typename T> bool isprime(T N) {
                         OwOkaomoji
                      ｡˚ (¦3ꇤ )3 ⋆｡˚✩
 ----------------------------------------------------------*/
+vector<pair<ll, ll>> prime_factorize(ll N) {
+  vector<pair<ll, ll>> res;
+
+  for (ll p = 2; p * p <= N; ++p) {
+    if (N % p != 0) {
+      continue;
+    }
+
+    ll e = 0;
+    while (N % p == 0) {
+      ++e;
+      N /= p;
+    }
+
+    res.emplace_back(p, e);
+  }
+
+  if (N != 1) {
+    res.emplace_back(N, 1);
+  }
+  return res;
+}
 
 int main() {
+
   ll n;
-  in(n);
-  onevec A(100001, 0); // サイズを 100001 に変更
-  rep(i, 0, n) {
-    ll a;
-    in(a);
-    A[a]++;
+  cin >> n;
+  const auto &pf = prime_factorize(n);
+  for (const auto &p : pf) {
+    rep(i, 0, p.second) cout << p.first << " ";
   }
-  ll sum = 0;
-  rep(i, 1, 50000) { // インデックスの範囲を修正
-    sum += A[i] * A[100000 - i];
-  }
-  sum += A[50000] * (A[50000] - 1) / 2;
-  out(sum);
+  cout << endl;
   return 0;
 }

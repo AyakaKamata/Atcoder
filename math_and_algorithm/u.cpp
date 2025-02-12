@@ -109,18 +109,8 @@ template <typename T> bool isprime(T N) {
 ----------------------------------------------------------*/
 
 int main() {
-
-  ll n;
-  in(n);
-  onevec a(n);
-  rep(i, 0, n) in(a[i]);
-  ll sum = 0;
-  rep(i, 0, n) rep(j, i + 1, n) rep(k, j + 1, n) rep(l, k + 1, n)
-      rep(m, l + 1, n) {
-    if (a[i] + a[j] + a[k] + a[l] + a[m] == 1000) {
-      sum++;
-    }
-  }
-  out(sum);
+  ll n, r;
+  in(n, r);
+  out(factorial(n) / (factorial(r) * factorial(n - r)));
   return 0;
 }

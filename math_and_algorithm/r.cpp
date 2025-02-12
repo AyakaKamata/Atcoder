@@ -112,10 +112,12 @@ int main() {
 
   ll n;
   in(n);
-  onevec a(n);
-  fore(i, a) { in(i); }
-  ll res = a[0];
-  rep(i, 1, n) res = lcm(res, a[i]);
-  out(res);
+  onevec A(4, 0);
+  rep(i, 0, n) {
+    ll a;
+    in(a);
+    A[a / 100 - 1]++;
+  }
+  out(A[0] * A[3] + A[1] * A[2]);
   return 0;
 }

@@ -112,17 +112,15 @@ int main() {
 
   ll n;
   in(n);
-  onevec A(3, 0);
-  rep(i, 0, n) {
-    ll a;
-    in(a);
-    A[a - 1]++;
+  onevec a(n);
+  rep(i, 0, n) in(a[i]);
+  ll sum = 0;
+  rep(i, 0, n) rep(j, i + 1, n) rep(k, j + 1, n) rep(l, k + 1, n)
+      rep(m, l + 1, n) {
+    if (a[i] + a[j] + a[k] + a[l] + a[m] == 1000) {
+      sum++;
+    }
   }
-  ll res = 0;
-  rep(i, 0, 3) {
-    if (A[i] >= 2)
-      res += (A[i] * (A[i] - 1) / 2);
-  }
-  out(res);
+  out(sum);
   return 0;
 }

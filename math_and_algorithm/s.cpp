@@ -112,12 +112,17 @@ int main() {
 
   ll n;
   in(n);
-  onevec A(4, 0);
+  onevec A(3, 0);
   rep(i, 0, n) {
     ll a;
     in(a);
-    A[a / 100 - 1]++;
+    A[a - 1]++;
   }
-  out(A[0] * A[3] + A[1] * A[2]);
+  ll res = 0;
+  rep(i, 0, 3) {
+    if (A[i] >= 2)
+      res += (A[i] * (A[i] - 1) / 2);
+  }
+  out(res);
   return 0;
 }
