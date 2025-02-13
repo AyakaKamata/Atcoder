@@ -112,13 +112,16 @@ int main() {
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  ld n;
-  in(n);
-  onevecld b(n);
-  fore(x, b) in(x);
-  onevecld r(n);
-  fore(x, r) in(x);
-  print(n * (accumulate(all(b), 0LL) + accumulate(all(r), 0LL)) / pow(n, 2),
-        12);
+  ll n, x;
+  in(n, x);
+  rep(i, 0, n) {
+    ll a;
+    in(a);
+    if (a == x) {
+      YES;
+      return 0;
+    }
+  }
+  NO;
   return 0;
 }

@@ -109,16 +109,29 @@ template <typename T> bool isprime(T N) {
 ----------------------------------------------------------*/
 
 int main() {
-  ios::sync_with_stdio(false);
-  cin.tie(nullptr);
 
-  ld n;
-  in(n);
-  onevecld b(n);
-  fore(x, b) in(x);
-  onevecld r(n);
-  fore(x, r) in(x);
-  print(n * (accumulate(all(b), 0LL) + accumulate(all(r), 0LL)) / pow(n, 2),
-        12);
+  ll n;
+  cin >> n;
+
+  vector<ll> h(n);
+  for (ll i = 0; i < n; ++i) {
+    cin >> h[i];
+  }
+  vector<ll> dp1(n + 1, -1);
+  onevec dp2(n + 1, -1);
+
+  // 初期条件の設定
+  dp1[0] = 0;
+  dp2[0] = 0;
+
+  // ループ
+  for (ll i = 1; i < n + 1; ++i) {
+    dp1[i] = dp2[i - 1] + h[i - 1];
+    dp2[i] = max(dp1[i - 1], dp2[i - 1]);
+  }
+
+  // 結果の出力
+  cout << max(dp1[n], dp2[n]) << endl;
+
   return 0;
 }

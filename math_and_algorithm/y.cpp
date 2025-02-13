@@ -112,13 +112,14 @@ int main() {
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  ld n;
+  ll n;
   in(n);
+  onevecld a(n);
   onevecld b(n);
+  fore(x, a) in(x);
   fore(x, b) in(x);
-  onevecld r(n);
-  fore(x, r) in(x);
-  print(n * (accumulate(all(b), 0LL) + accumulate(all(r), 0LL)) / pow(n, 2),
-        12);
+  ld sum = 0;
+  rep(i, 0, n) { sum += a[i] + b[i] * 2; }
+  print(sum / 3, 12);
   return 0;
 }

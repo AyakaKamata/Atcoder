@@ -112,13 +112,12 @@ int main() {
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  ld n;
+  ll n;
   in(n);
-  onevecld b(n);
-  fore(x, b) in(x);
-  onevecld r(n);
-  fore(x, r) in(x);
-  print(n * (accumulate(all(b), 0LL) + accumulate(all(r), 0LL)) / pow(n, 2),
-        12);
+  onevec dp(n + 1);
+  dp[0] = dp[1] = 1;
+
+  rep(i, 2, n + 1) dp[i] = dp[i - 1] + dp[i - 2];
+  out(dp[n]);
   return 0;
 }

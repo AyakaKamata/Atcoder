@@ -63,6 +63,22 @@ template <typename T> T pdistance(const vector<pair<T, T>> &xy, int i, int j) {
   return sqrt(twice(xy[i].first - xy[j].first) +
               twice(xy[i].second - xy[j].second));
 }
+template <typename T>
+int isperp(const vector<pair<T, T>> &xyz, int i, int j, int k) {
+  T dx1 = xyz[i].first - xyz[j].first, dy1 = xyz[i].second - xyz[j].second;
+  T dx2 = xyz[k].first - xyz[j].first, dy2 = xyz[k].second - xyz[j].second;
+
+  T dot = dx1 * dx2 + dy1 * dy2;
+
+  return (dot > 0) ? 0 : (dot == 0) ? 1 : -1;
+}
+template <typename T>
+T crossp(const vector<pair<T, T>> &xyz, int i, int j, int k) {
+  T dx1 = xyz[i].first - xyz[j].first, dy1 = xyz[i].second - xyz[j].second;
+  T dx2 = xyz[k].first - xyz[j].first, dy2 = xyz[k].second - xyz[j].second;
+
+  return dx1 * dy2 - dy1 * dx2;
+}
 
 template <typename T> void print(T value, int precision) {
   cout << fixed << setprecision(precision) << value << endl;
@@ -112,13 +128,15 @@ int main() {
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  ld n;
-  in(n);
-  onevecld b(n);
-  fore(x, b) in(x);
-  onevecld r(n);
-  fore(x, r) in(x);
-  print(n * (accumulate(all(b), 0LL) + accumulate(all(r), 0LL)) / pow(n, 2),
-        12);
+  pld a, b, c;
+  in(a.first, a.second, b.first, b.second, c.first, c.second);
+  vector<pld> xyz = {a, b, c};
+  if (isperp(xyz, 0, 1, 2) == -1) {
+    print(pdistance(xyz, 0, 1), 12);
+  } else if (isperp(xyz, 0, 2, 1) == -1) {
+    print(pdistance(xyz, 0, 2), 12);
+  } else {
+    print(abs(crossp(xyz, 0, 1, 2)) / pdistance(xyz, 1, 2), 12);
+  }
   return 0;
 }
