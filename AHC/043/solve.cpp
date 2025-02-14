@@ -105,36 +105,91 @@ public:
   void build_nothing() { actions.emplace_back(DO_NOTHING, 0, 0); }
 
   void solve() {
-    int rail_count = (K - COST_STATION * 2) / COST_RAIL;
-    int person_idx = 0;
-    while (person_idx < M) {
-      if (distance(home[person_idx], workplace[person_idx]) - 1 <= rail_count)
-        break;
-      person_idx++;
-    }
-    assert(person_idx != M);
+    // 各人が既に接続済みかどうかの管理
+    vector<bool> connected(M, false);
 
-    build_station(home[person_idx].first, home[person_idx].second);
-    build_station(workplace[person_idx].first, workplace[person_idx].second);
-
-    // Connect the stations using rails (implementation omitted for brevity)
-
-    int income = calc_income();
-    money += income;
-
+    // T回のターンが終了するまで繰り返す
     while (actions.size() < T) {
-      build_nothing();
-      money += income;
+      bool found_person = false;
+      // 人 0, 人 1, … の順にチェック
+      for (int i = 0; i < M; i++) {
+        if (!connected[i]) {
+          int d = distance(home[i], workplace[i]);
+          // 必要な線路本数は (マンハッタン距離 - 1) 本（d==0,1の場合は0本）
+          int rail_needed = max(0, d - 1);
+          int cost_required = 2 * COST_STATION + rail_needed * COST_RAIL;
+          // 接続後の純増資金 = (得られる収入：新たに接続される人の距離 d) -
+          // 接続にかかるコスト つまり、接続を実施すると d - cost_required
+          // だけ資金が増える
+          // もしこれがマイナスになるなら、接続後に資金が減るので実行しない
+          if (money >= cost_required && (d - cost_required >= 0)) {
+            connected[i] = true;
+            // 家と職場に駅を配置
+            build_station(home[i].first, home[i].second);
+            build_station(workplace[i].first, workplace[i].second);
+
+            int r0 = home[i].first, c0 = home[i].second;
+            int r1 = workplace[i].first, c1 = workplace[i].second;
+
+            // 家と職場が同一直線上の場合
+            if (r0 == r1) {
+              int step = (c1 > c0 ? 1 : -1);
+              for (int c = c0 + step; c != c1; c += step) {
+                build_rail(RAIL_HORIZONTAL, r0, c);
+              }
+            } else if (c0 == c1) {
+              int step = (r1 > r0 ? 1 : -1);
+              for (int r = r0 + step; r != r1; r += step) {
+                build_rail(RAIL_VERTICAL, r, c0);
+              }
+            } else {
+              // 家と職場が斜めの場合：水平→垂直の順で接続する
+              int step = (c1 > c0 ? 1 : -1);
+              // 水平方向：駅の隣から、ターン手前まで敷設
+              for (int c = c0 + step; c != c1; c += step) {
+                // 次が turning cell になる場合はそこでループを抜ける
+                if (c + step == c1)
+                  break;
+                build_rail(RAIL_HORIZONTAL, r0, c);
+              }
+              // ターン地点 (r0, c1) に角レールを配置
+              int cornerType;
+              if (r1 > r0) {
+                cornerType = (c1 > c0 ? RAIL_RIGHT_DOWN : RAIL_LEFT_DOWN);
+              } else {
+                cornerType = (c1 > c0 ? RAIL_RIGHT_UP : RAIL_LEFT_UP);
+              }
+              build_rail(cornerType, r0, c1);
+              // 垂直方向：ターン地点から目的地手前まで敷設
+              int stepV = (r1 > r0 ? 1 : -1);
+              for (int r = r0 + stepV; r != r1; r += stepV) {
+                build_rail(RAIL_VERTICAL, r, c1);
+              }
+            }
+            // 接続後、全体の収入を計算して資金に加える
+            int income = calc_income();
+            money += income;
+            found_person = true;
+            break; // このターンはひとまず終了
+          }
+        }
+      }
+      // 接続可能かつ資金減少とならない人が見つからなかった場合は「何もしない」操作を実施
+      if (!found_person) {
+        build_nothing();
+        int income = calc_income();
+        money += income;
+      }
     }
 
+    // T回分の操作を出力
     for (auto &action : actions) {
       int type, r, c;
       tie(type, r, c) = action;
-      if (type == DO_NOTHING) {
+      if (type == DO_NOTHING)
         cout << "-1\n";
-      } else {
+      else
         cout << type << " " << r << " " << c << "\n";
-      }
     }
     cerr << "score=" << money << endl;
   }
