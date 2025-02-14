@@ -10,7 +10,7 @@
 			"#define YES cout << \"Yes\" << endl",
 			"#define NO cout << \"No\" << endl",
 			"#define YN { cout << \"Yes\" << endl; } else { cout << \"No\" << endl; } // if(a==b)YN;",
-			"#define fail cout << -1 << endl",
+			"#define FAIL cout << -1 << endl",
 			"#pragma GCC optimize(\"-O3\")",
 			"",
 			"using namespace std;",
