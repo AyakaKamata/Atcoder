@@ -111,8 +111,30 @@ public:
   UnionFind uf;
 
   Field(int N) : N(N), rail(N, vector<int>(N, EMPTY)), uf(N) {}
-
-  int build(int type, int r, int c) {
+  bool exist_station(int &r, int &c) {
+    for (int dr = -2; dr <= 2; dr++) {
+      for (int dc = -2; dc <= 2; dc++) {
+        if (abs(dr) + abs(dc) > 2)
+          continue;
+        int nr = r + dr, nc = c + dc;
+        // 配列の範囲内であるかチェック（Nはフィールドのサイズと仮定）
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N)
+          continue;
+        if (rail[nr][nc] == STATION) {
+          r = nr;
+          c = nc;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  int build(int type, int &r, int &c) {
+    if (type == STATION) {
+      if (exist_station(r, c)) {
+        return 0;
+      }
+    }
     if (rail[r][c] == STATION) {
       return 0; // assert
     }
@@ -218,73 +240,127 @@ public:
     return income;
   }
 
-  void build_rail(int type, int r, int c) {
+  void build_rail(int type, int &r, int &c) {
     int a = field.build(type, r, c);
     if (a == 0 || a == -1) {
+      // TODO
       actions.push_back(Action(DO_NOTHING, {0, 0}));
       return;
     } else {
       money -= COST_RAIL;
       actions.push_back(Action(type, {r, c}));
-      cout << "#rail" << endl;
     }
   }
 
-  void build_station(int r, int c) {
+  void build_station(int &r, int &c) {
     int a = field.build(STATION, r, c);
     if (a == 0 || a == -1) {
+      // TODO
       actions.push_back(Action(DO_NOTHING, {0, 0}));
       return;
     } else {
       money -= COST_STATION;
       actions.push_back(Action(STATION, {r, c}));
-      cout << "#station" << endl;
     }
   }
 
-  void build_nothing() {
-    actions.push_back(Action(DO_NOTHING, {0, 0}));
-    cout << "#nothing" << endl;
-  }
+  void build_nothing() { actions.push_back(Action(DO_NOTHING, {0, 0})); }
 
   Result solve() {
     // Used to ensure we don't connect the same person twice.
     vector<bool> used(M, false);
+    queue<int> next_who;
 
-    // Try to perform connection logic twice.
+    // Try to perform connection logic until T 個のアクションがたまる。
     while ((int)actions.size() < T) {
       int person_idx = -1;
-      // Look for a person (not already used) for whom we have enough money.
-      for (int i = 0; i < M; i++) {
-        if (used[i])
+      int r0, c0, r1, c1;
+      // まずは next_who キューにある候補を優先的に使用する。
+      while (!next_who.empty()) {
+        int candidate = next_who.front();
+        next_who.pop();
+        if (used[candidate])
           continue;
-        int d = distancePos(home[i], workplace[i]);
+
+        // candidate の家と職場の位置を取得
+        r0 = home[candidate].first;
+        c0 = home[candidate].second;
+        r1 = workplace[candidate].first;
+        c1 = workplace[candidate].second;
+
+        // 既に駅が近くに存在するかをチェック（この関数は存在すれば r, c
+        // を更新します）
+        field.exist_station(r0, c0);
+        field.exist_station(r1, c1);
+
+        int stationsNeeded = 1;
+
+        // 駅設置済みの場合は、存在する駅の位置（更新後の r0, c0 / r1,
+        // c1）を用いて距離計算
+        int d = distancePos(make_pair(r0, c0), make_pair(r1, c1));
         int railsNeeded = max(0, d - 1);
-        int stationsNeeded = 2;
+
         int costRequired =
             stationsNeeded * COST_STATION + railsNeeded * COST_RAIL;
+
+        // ここで、予算や残りアクション数などの条件をチェック
         if (money >= costRequired &&
             T - (int)actions.size() >= (stationsNeeded + railsNeeded) &&
             d * (T - (int)actions.size() - (stationsNeeded + railsNeeded)) >=
                 costRequired) {
-          person_idx = i;
+          person_idx = candidate;
           break;
         }
       }
-      // If no eligible person is found, break out.
+
+      // next_who から有効な候補がなかったら、全体から探す。
+      if (person_idx == -1) {
+        for (int i = 0; i < M; i++) {
+          if (used[i])
+            continue;
+          int d = distancePos(home[i], workplace[i]);
+          int railsNeeded = max(0, d - 1);
+          int stationsNeeded = 2;
+          int costRequired =
+              stationsNeeded * COST_STATION + railsNeeded * COST_RAIL;
+          if (money >= costRequired &&
+              T - (int)actions.size() >= (stationsNeeded + railsNeeded) &&
+              d * (T - (int)actions.size() - (stationsNeeded + railsNeeded)) >=
+                  costRequired) {
+            person_idx = i;
+            break;
+          }
+        }
+      }
+
+      // 有効な候補が見つからなければ "build_nothing" を行う。
       if (person_idx == -1) {
         build_nothing();
-      }
-      // break;
-      else {
+      } else {
         used[person_idx] = true;
-        // Place stations at the person's home and workplace.
-        build_station(home[person_idx].first, home[person_idx].second);
-        build_station(workplace[person_idx].first,
-                      workplace[person_idx].second);
+        // その人の家と職場に駅を建設する。
+        r0 = home[person_idx].first;
+        c0 = home[person_idx].second;
+        r1 = workplace[person_idx].first;
+        c1 = workplace[person_idx].second;
+        build_station(r0, c0);
+        build_station(r1, c1);
 
-        int r0 = home[person_idx].first, c0 = home[person_idx].second;
-        int r1 = workplace[person_idx].first, c1 = workplace[person_idx].second;
+        // 今回新たに駅を建設した位置から、Manhattan 距離 2
+        // 以内にある他の家または職場を探索する。
+        for (int i = 0; i < M; i++) {
+          if (used[i])
+            continue; // すでに接続済みの場合はスキップ。
+          // home[person_idx] から i 番目の家または職場、または
+          // workplace[person_idx] から i
+          // 番目の家または職場までの距離をチェック。
+          if (distancePos(make_pair(r0, c0), home[i]) <= 2 ||
+              distancePos(make_pair(r0, c0), workplace[i]) <= 2 ||
+              distancePos(make_pair(r1, c1), home[i]) <= 2 ||
+              distancePos(make_pair(r1, c1), workplace[i]) <= 2) {
+            next_who.push(i);
+          }
+        }
 
         // Build vertical rails (and a corner rail) to connect along rows.
         if (r0 < r1) {
@@ -321,12 +397,6 @@ public:
 
       money += calc_income();
     }
-
-    // // After two rounds of connecting, fill remaining turns with "do
-    // nothing". int income = calc_income(); while ((int)actions.size() < T) {
-    //   build_nothing();
-    //   money += income;
-    // }
 
     return Result(actions, money);
   }
