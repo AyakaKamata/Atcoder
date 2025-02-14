@@ -123,7 +123,9 @@ public:
           // だけ資金が増える
           // もしこれがマイナスになるなら、接続後に資金が減るので実行しない
           if (money >= cost_required &&
-              (d * (T - actions.size() - 1) - cost_required >= 0)) {
+              (d * (T - actions.size() - (2 + rail_needed)) - cost_required >=
+               0)) // T-のあと、間違ってるかも（結果は変わらない）
+          {
             connected[i] = true;
             // 家と職場に駅を配置
             build_station(home[i].first, home[i].second);
