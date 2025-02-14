@@ -122,7 +122,8 @@ public:
           // 接続にかかるコスト つまり、接続を実施すると d - cost_required
           // だけ資金が増える
           // もしこれがマイナスになるなら、接続後に資金が減るので実行しない
-          if (money >= cost_required && (d - cost_required >= 0)) {
+          if (money >= cost_required &&
+              (d * (T - actions.size() - 1) - cost_required >= 0)) {
             connected[i] = true;
             // 家と職場に駅を配置
             build_station(home[i].first, home[i].second);
@@ -145,19 +146,19 @@ public:
             } else {
               // 家と職場が斜めの場合：水平→垂直の順で接続する
               int step = (c1 > c0 ? 1 : -1);
-              // 水平方向：駅の隣から、ターン手前まで敷設
+              // 水平方向：駅の隣から、ターンの１個手前まで敷設
               for (int c = c0 + step; c != c1; c += step) {
-                // 次が turning cell になる場合はそこでループを抜ける
+                build_rail(RAIL_HORIZONTAL, r0, c);
+                // 次のセルがターンセルであればここで終了
                 if (c + step == c1)
                   break;
-                build_rail(RAIL_HORIZONTAL, r0, c);
               }
               // ターン地点 (r0, c1) に角レールを配置
               int cornerType;
               if (r1 > r0) {
-                cornerType = (c1 > c0 ? RAIL_RIGHT_DOWN : RAIL_LEFT_DOWN);
+                cornerType = (c1 > c0 ? RAIL_LEFT_DOWN : RAIL_RIGHT_DOWN);
               } else {
-                cornerType = (c1 > c0 ? RAIL_RIGHT_UP : RAIL_LEFT_UP);
+                cornerType = (c1 > c0 ? RAIL_LEFT_UP : RAIL_RIGHT_UP);
               }
               build_rail(cornerType, r0, c1);
               // 垂直方向：ターン地点から目的地手前まで敷設
