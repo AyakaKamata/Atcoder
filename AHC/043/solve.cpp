@@ -226,11 +226,12 @@ public:
   Field field;
   int money;
   vector<Action> actions;
+  vector<vector<int>> A;
 
   Solver(int N, int M, int K, int T, const vector<Pos> &home,
-         const vector<Pos> &workplace)
-      : N(N), M(M), K(K), T(T), home(home), workplace(workplace), field(N),
-        money(K) {}
+         const vector<Pos> &workplace, vector<vector<int>> &A)
+      : N(N), M(M), K(K), T(T), home(home), workplace(workplace), A(A),
+        field(N), money(K) {}
 
   int calc_income() {
     int income = 0;
@@ -316,21 +317,17 @@ private:
     return false;
   }
 
-  // (r0, c0) から (r1, c1) へ向けて BFS を行うが、
-  // 途中で「ゴール駅と同じ連結成分に属する駅」に到達したら探索終了。
-  vector<Pos> find_path_bfs_with_warp(int r0, int c0, int r1, int c1) {
-    // 返すパス用
+  // A: 各マスのスコア (A[i][j] の値) を保持する 2 次元配列を引数として受ける
+  vector<Pos> find_path_bfs_with_warp(int r0, int c0, int r1, int c1,
+                                      const vector<vector<int>> &A) {
     vector<Pos> path;
 
-    // もし最初からスタートがゴールと同じ連結成分にある駅なら、経路不要
-    // あるいは既に (r0,c0) がゴール駅と連結していれば終了
+    // もしスタートが駅で、かつゴール駅と連結していれば経路不要
     if (field.rail[r0][c0] == STATION &&
         field.is_connected({r0, c0}, {r1, c1})) {
-      // 空のパスを返して「レールを敷く必要なし」とする
       return path;
     }
 
-    // BFS 用キューと訪問配列、親情報
     queue<Pos> q;
     vector<vector<bool>> visited(field.N, vector<bool>(field.N, false));
     vector<vector<Pos>> parent(field.N, vector<Pos>(field.N, {-1, -1}));
@@ -340,25 +337,25 @@ private:
     visited[r0][c0] = true;
     q.push(start);
 
-    // 4方向 (上,下,左,右)
+    // 4方向 (上, 下, 左, 右)
     static const int DR[4] = {-1, 1, 0, 0};
     static const int DC[4] = {0, 0, -1, 1};
 
-    bool found = false;    // 経路を見つけたか
-    Pos endPos = {-1, -1}; // 経路復元用に「探索終了地点」を覚えておく
+    bool found = false;    // 経路発見済みフラグ
+    Pos endPos = {-1, -1}; // 経路復元用の終了地点
 
     while (!q.empty()) {
       Pos cur = q.front();
       q.pop();
 
-      // もしゴール駅そのものに到達したら探索打ち切り
+      // ゴール駅に到達したら終了
       if (cur == goal) {
         found = true;
         endPos = cur;
         break;
       }
 
-      // もし駅に到達 & ゴール駅と同じ連結成分なら、ここで打ち切り
+      // 現在のセルが駅で、かつゴール駅と連結していればそこで終了
       if (field.rail[cur.first][cur.second] == STATION) {
         if (field.is_connected(cur, goal)) {
           found = true;
@@ -367,35 +364,39 @@ private:
         }
       }
 
-      // 4方向へ探索を伸ばす
+      // 隣接セル候補を一旦 vector に集める
+      vector<Pos> candidates;
       for (int i = 0; i < 4; i++) {
         int nr = cur.first + DR[i];
         int nc = cur.second + DC[i];
-        // 範囲チェック
+        // 範囲外は除く
         if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
           continue;
         if (visited[nr][nc])
           continue;
-
-        // 通行可能判定: EMPTY or STATION は通行可
-        // 既にレール(RAIL_*)があるセルは壁扱い (要件に応じて変更可)
+        // EMPTY または STATION、またはゴールセルは通行可能とする
         if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
-            // もしゴール自体がレールでも構わずゴールにしたい場合
             (nr == r1 && nc == c1)) {
+          candidates.push_back({nr, nc});
           visited[nr][nc] = true;
           parent[nr][nc] = cur;
-          q.push({nr, nc});
         }
+      }
+      // A[i][j] の値が大きい順にソート（高スコアのマスを優先）
+      sort(candidates.begin(), candidates.end(),
+           [&](const Pos &p1, const Pos &p2) {
+             return A[p1.first][p1.second] > A[p2.first][p2.second];
+           });
+      // ソート済みの候補をキューに追加
+      for (const Pos &p : candidates) {
+        q.push(p);
       }
     }
 
-    // 経路が見つからなかった場合は空を返す
-    if (!found) {
-      return path;
-    }
+    if (!found)
+      return path; // 経路が見つからなかった場合は空を返す
 
-    // endPos から parent をたどって start まで戻り、逆順にして復元
-    // (start から endPos までの経路)
+    // 経路復元: endPos から parent をたどり start まで戻る
     Pos cur = endPos;
     while (!(cur.first == -1 && cur.second == -1)) {
       path.push_back(cur);
@@ -404,7 +405,6 @@ private:
       cur = parent[cur.first][cur.second];
     }
     reverse(path.begin(), path.end());
-
     return path;
   }
 
@@ -544,7 +544,7 @@ public:
         // BFS 経路探索（find_path_bfs_with_warp 内では、
         // 途中でゴール駅（もしくはゴールと同じ連結成分の駅）に到達した時点で終了する）
         vector<Pos> path = find_path_bfs_with_warp(start.first, start.second,
-                                                   goal.first, goal.second);
+                                                   goal.first, goal.second, A);
 
         // 経路が得られた場合、先頭・末尾は駅なので中間セルにレールを敷る
         if (!path.empty()) {
@@ -573,22 +573,10 @@ public:
   }
 };
 
-int main() {
-  ios::sync_with_stdio(false);
-  cin.tie(nullptr);
-
-  int N, M, K, T;
-  cin >> N >> M >> K >> T;
-  vector<Pos> home(M), workplace(M);
-  for (int i = 0; i < M; i++) {
-    int r0, c0, r1, c1;
-    cin >> r0 >> c0 >> r1 >> c1;
-    home[i] = {r0, c0};
-    workplace[i] = {r1, c1};
-  }
-
-  // まず、縦横 N*N の各マスについて、マンハッタン距離2以内にある home と
-  // workplace の個数を計算し、A[i][j] に格納する
+// A[i][j] を計算する関数
+vector<vector<int>> computeA(int N, const vector<Pos> &home,
+                             const vector<Pos> &workplace) {
+  int M = home.size();
   vector<vector<int>> A(N, vector<int>(N, 0));
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
@@ -604,23 +592,26 @@ int main() {
       A[i][j] = count;
     }
   }
+  return A;
+}
 
-  // 各人について、home と workplace のマスの A の値の合計をスコアとする
+// 各人のスコア（home と workplace の A の値の合計）で降順に並び替える関数
+void sortByScore(int N, vector<Pos> &home, vector<Pos> &workplace,
+                 vector<vector<int>> A) {
+  int M = home.size();
+
   vector<int> score(M, 0);
   for (int p = 0; p < M; p++) {
     score[p] = A[home[p].first][home[p].second] +
                A[workplace[p].first][workplace[p].second];
   }
-
-  // スコアが高い順に並び替えるためのインデックス配列を作成
   vector<int> idx(M);
   for (int i = 0; i < M; i++) {
     idx[i] = i;
   }
+  // 降順ソート: score の値が大きい順に並ぶようにする
   sort(idx.begin(), idx.end(),
        [&](int a, int b) { return score[a] > score[b]; });
-
-  // 並び替えた順に home と workplace を再構成
   vector<Pos> sortedHome, sortedWorkplace;
   for (int i = 0; i < M; i++) {
     sortedHome.push_back(home[idx[i]]);
@@ -628,8 +619,26 @@ int main() {
   }
   home = sortedHome;
   workplace = sortedWorkplace;
+}
 
-  Solver solver(N, M, K, T, home, workplace);
+int main() {
+  ios::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int N, M, K, T;
+  cin >> N >> M >> K >> T;
+  vector<Pos> home(M), workplace(M);
+  for (int i = 0; i < M; i++) {
+    int r0, c0, r1, c1;
+    cin >> r0 >> c0 >> r1 >> c1;
+    home[i] = {r0, c0};
+    workplace[i] = {r1, c1};
+  }
+  vector<vector<int>> A = computeA(N, home, workplace);
+  // home, workplace に対してスコア順に並び替える
+  sortByScore(N, home, workplace, A);
+
+  Solver solver(N, M, K, T, home, workplace, A);
   Result result = solver.solve();
   cout << result.toString() << "\n";
   cerr << "score=" << result.score << "\n";
