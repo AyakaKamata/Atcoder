@@ -218,7 +218,6 @@ public:
   }
 };
 
-// Solver クラスの一部
 class Solver {
 public:
   int N, M, K, T;
@@ -489,6 +488,24 @@ private:
     // parents[idx] が -1 の場合は、まだ他の駅と繋がっていないとみなす
     return (field.uf.parents[idx] == -1);
   }
+  // next_who に入っている候補 (人のインデックス) を A の値で降順にソートする
+  void sortNextWhoQueue(queue<int> &q) {
+    vector<int> candidates;
+    while (!q.empty()) {
+      candidates.push_back(q.front());
+      q.pop();
+    }
+    sort(candidates.begin(), candidates.end(), [&](int a, int b) {
+      int scoreA = A[home[a].first][home[a].second] +
+                   A[workplace[a].first][workplace[a].second];
+      int scoreB = A[home[b].first][home[b].second] +
+                   A[workplace[b].first][workplace[b].second];
+      return scoreA > scoreB; // 降順
+    });
+    for (int cand : candidates) {
+      q.push(cand);
+    }
+  }
 
 public:
   Result solve() {
@@ -498,6 +515,8 @@ public:
     while ((int)actions.size() < T) {
       int person_idx = -1;
       int r0, c0, r1, c1;
+      sortNextWhoQueue(next_who);
+
       // next_who キューから候補を探す
       while (!next_who.empty()) {
         int candidate = next_who.front();
