@@ -559,58 +559,56 @@ int main() {
 
   int N, M, K, T;
   cin >> N >> M >> K >> T;
-  vector<Pos> home;
-  vector<Pos> workplace;
+  vector<Pos> home(M), workplace(M);
   for (int i = 0; i < M; i++) {
     int r0, c0, r1, c1;
     cin >> r0 >> c0 >> r1 >> c1;
-    home.push_back({r0, c0});
-    workplace.push_back({r1, c1});
+    home[i] = {r0, c0};
+    workplace[i] = {r1, c1};
   }
 
-  // 各マスについて、マンハッタン距離2以内にある home と workplace
-  // の数をカウント
-  vector<vector<int>> A1(N, vector<int>(N, 0));
-  vector<vector<int>> A2(N, vector<int>(N, 0));
+  // まず、縦横 N*N の各マスについて、マンハッタン距離2以内にある home と
+  // workplace の個数を計算し、A[i][j] に格納する
+  vector<vector<int>> A(N, vector<int>(N, 0));
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
-      // 各セル (i,j) に対して
+      int count = 0;
       for (int p = 0; p < M; p++) {
-        if (abs(home[p].first - i) + abs(home[p].second - j) <= 2) {
-          A1[i][j]++;
-        }
-        if (abs(workplace[p].first - i) + abs(workplace[p].second - j) <= 2) {
-          A2[i][j]++;
-        }
+        // home[p] が (i,j) からマンハッタン距離2以内ならカウント
+        if (abs(home[p].first - i) + abs(home[p].second - j) <= 2)
+          count++;
+        // workplace[p] も同様
+        if (abs(workplace[p].first - i) + abs(workplace[p].second - j) <= 2)
+          count++;
       }
+      A[i][j] = count;
     }
   }
 
-  // 各人について、B_i = (A1[home位置] + A2[workplace位置]) / 2 を計算
-  vector<double> B(M, 0.0);
-  for (int i = 0; i < M; i++) {
-    int hr = home[i].first, hc = home[i].second;
-    int wr = workplace[i].first, wc = workplace[i].second;
-    B[i] = (A1[hr][hc] + A2[wr][wc]) / 2.0;
+  // 各人について、home と workplace のマスの A の値の合計をスコアとする
+  vector<int> score(M, 0);
+  for (int p = 0; p < M; p++) {
+    score[p] = A[home[p].first][home[p].second] +
+               A[workplace[p].first][workplace[p].second];
   }
 
-  // インデックス配列を B_i の降順にソート
+  // スコアが高い順に並び替えるためのインデックス配列を作成
   vector<int> idx(M);
   for (int i = 0; i < M; i++) {
     idx[i] = i;
   }
-  sort(idx.begin(), idx.end(), [&](int a, int b) { return B[a] > B[b]; });
+  sort(idx.begin(), idx.end(),
+       [&](int a, int b) { return score[a] > score[b]; });
 
-  // 並び替えに合わせて home, workplace を再構成
-  vector<Pos> sorted_home, sorted_workplace;
+  // 並び替えた順に home と workplace を再構成
+  vector<Pos> sortedHome, sortedWorkplace;
   for (int i = 0; i < M; i++) {
-    sorted_home.push_back(home[idx[i]]);
-    sorted_workplace.push_back(workplace[idx[i]]);
+    sortedHome.push_back(home[idx[i]]);
+    sortedWorkplace.push_back(workplace[idx[i]]);
   }
-  home = sorted_home;
-  workplace = sorted_workplace;
+  home = sortedHome;
+  workplace = sortedWorkplace;
 
-  // 並び替えた home, workplace を用いて Solver を生成
   Solver solver(N, M, K, T, home, workplace);
   Result result = solver.solve();
   cout << result.toString() << "\n";
