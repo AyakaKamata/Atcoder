@@ -254,6 +254,26 @@ public:
   }
 
   void build_station(int &r, int &c) {
+    // マンハッタン距離2以内に線路がある場合、駅をその線路上に移す
+    bool moved = false;
+    for (int dr = -2; dr <= 2 && !moved; dr++) {
+      for (int dc = -2; dc <= 2 && !moved; dc++) {
+        if (abs(dr) + abs(dc) <= 2) {
+          int nr = r + dr, nc = c + dc;
+          // 配列範囲チェック（field.N はフィールドサイズ）
+          if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
+            continue;
+          int cell = field.rail[nr][nc];
+          // もし cell が線路（RAIL_HORIZONTAL〜RAIL_RIGHT_DOWN）なら
+          if (cell >= RAIL_HORIZONTAL && cell <= RAIL_RIGHT_DOWN) {
+            r = nr;
+            c = nc;
+            moved = true;
+          }
+        }
+      }
+    }
+
     int a = field.build(STATION, r, c);
     if (a == 0 || a == -1) {
       actions.push_back(Action(DO_NOTHING, {0, 0}));
