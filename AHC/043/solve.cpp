@@ -525,6 +525,7 @@ vector<int> computeD(const vector<Pos> &home, const vector<Pos> &workplace) {
   vector<int> distances(M, 0);
   for (int i = 0; i < M; i++) {
     distances[i] = distancePos(home[i], workplace[i]);
+    cout << "#" << i << " " << distances[i] << endl;
   }
   return distances;
 }
