@@ -229,7 +229,7 @@ public:
   vector<vector<int>> A;
 
   Solver(int N, int M, int K, int T, const vector<Pos> &home,
-         const vector<Pos> &workplace, vector<vector<int>> &A)
+         const vector<Pos> &workplace, vector<vector<int>> A)
       : N(N), M(M), K(K), T(T), home(home), workplace(workplace), A(A),
         field(N), money(K) {}
 
@@ -319,7 +319,7 @@ private:
 
   // A: 各マスのスコア (A[i][j] の値) を保持する 2 次元配列を引数として受ける
   vector<Pos> find_path_bfs_with_warp(int r0, int c0, int r1, int c1,
-                                      const vector<vector<int>> &A) {
+                                      const vector<vector<int>> A) {
     vector<Pos> path;
 
     // もしスタートが駅で、かつゴール駅と連結していれば経路不要
@@ -572,22 +572,32 @@ public:
     return Result(actions, money);
   }
 };
+// 各人について、home と workplace のマンハッタン距離を計算して返す関数
+vector<int> computeD(const vector<Pos> &home, const vector<Pos> &workplace) {
+  int M = home.size();
+  vector<int> distances(M, 0);
+  for (int i = 0; i < M; i++) {
+    distances[i] = distancePos(home[i], workplace[i]);
+  }
+  return distances;
+}
 
 // A[i][j] を計算する関数
 vector<vector<int>> computeA(int N, const vector<Pos> &home,
                              const vector<Pos> &workplace) {
   int M = home.size();
   vector<vector<int>> A(N, vector<int>(N, 0));
+  vector<int> D = computeD(home, workplace);
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       int count = 0;
       for (int p = 0; p < M; p++) {
         // home[p] が (i,j) からマンハッタン距離2以内ならカウント
         if (abs(home[p].first - i) + abs(home[p].second - j) <= 2)
-          count++;
+          count += D[p];
         // workplace[p] も同様
         if (abs(workplace[p].first - i) + abs(workplace[p].second - j) <= 2)
-          count++;
+          count += D[p];
       }
       A[i][j] = count;
     }
