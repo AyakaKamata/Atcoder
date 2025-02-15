@@ -260,11 +260,9 @@ public:
       for (int dc = -2; dc <= 2 && !moved; dc++) {
         if (abs(dr) + abs(dc) <= 2) {
           int nr = r + dr, nc = c + dc;
-          // 配列範囲チェック（field.N はフィールドサイズ）
           if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
             continue;
           int cell = field.rail[nr][nc];
-          // もし cell が線路（RAIL_HORIZONTAL〜RAIL_RIGHT_DOWN）なら
           if (cell >= RAIL_HORIZONTAL && cell <= RAIL_RIGHT_DOWN) {
             r = nr;
             c = nc;
@@ -296,7 +294,7 @@ private:
     c0 = home[candidate].second;
     r1 = workplace[candidate].first;
     c1 = workplace[candidate].second;
-    int d = distancePos(make_pair(r0, c0), make_pair(r1, c1));
+    int d = distancePos({r0, c0}, {r1, c1});
     bool f1 = field.exist_station(r0, c0);
     bool f2 = field.exist_station(r1, c1);
     int stationsNeeded = 0;
@@ -304,7 +302,7 @@ private:
       stationsNeeded++;
     if (!f2)
       stationsNeeded++;
-    int d_ = distancePos(make_pair(r0, c0), make_pair(r1, c1));
+    int d_ = distancePos({r0, c0}, {r1, c1});
     int railsNeeded = max(0, d_ - 1);
     int costRequired = stationsNeeded * COST_STATION + railsNeeded * COST_RAIL;
     if (money >= costRequired &&
@@ -316,45 +314,42 @@ private:
     return false;
   }
 
-  // A: 各マスのスコア (A[i][j] の値) を保持する 2 次元配列を引数として受ける
+  // next_who に入っている候補 (人のインデックス) を A の値で降順にソートする
+  void sortNextWhoVector(vector<int> &candidates) {
+    sort(candidates.begin(), candidates.end(), [&](int a, int b) {
+      int scoreA = A[home[a].first][home[a].second] +
+                   A[workplace[a].first][workplace[a].second];
+      int scoreB = A[home[b].first][home[b].second] +
+                   A[workplace[b].first][workplace[b].second];
+      return scoreA > scoreB; // 降順
+    });
+  }
+
   vector<Pos> find_path_bfs_with_warp(int r0, int c0, int r1, int c1,
                                       const vector<vector<int>> A) {
     vector<Pos> path;
-
-    // もしスタートが駅で、かつゴール駅と連結していれば経路不要
     if (field.rail[r0][c0] == STATION &&
         field.is_connected({r0, c0}, {r1, c1})) {
       return path;
     }
-
     queue<Pos> q;
     vector<vector<bool>> visited(field.N, vector<bool>(field.N, false));
     vector<vector<Pos>> parent(field.N, vector<Pos>(field.N, {-1, -1}));
-
-    Pos start = {r0, c0};
-    Pos goal = {r1, c1};
+    Pos start = {r0, c0}, goal = {r1, c1};
     visited[r0][c0] = true;
     q.push(start);
-
-    // 4方向 (上, 下, 左, 右)
     static const int DR[4] = {-1, 1, 0, 0};
     static const int DC[4] = {0, 0, -1, 1};
-
-    bool found = false;    // 経路発見済みフラグ
-    Pos endPos = {-1, -1}; // 経路復元用の終了地点
-
+    bool found = false;
+    Pos endPos = {-1, -1};
     while (!q.empty()) {
       Pos cur = q.front();
       q.pop();
-
-      // ゴール駅に到達したら終了
       if (cur == goal) {
         found = true;
         endPos = cur;
         break;
       }
-
-      // 現在のセルが駅で、かつゴール駅と連結していればそこで終了
       if (field.rail[cur.first][cur.second] == STATION) {
         if (field.is_connected(cur, goal)) {
           found = true;
@@ -362,18 +357,13 @@ private:
           break;
         }
       }
-
-      // 隣接セル候補を一旦 vector に集める
       vector<Pos> candidates;
       for (int i = 0; i < 4; i++) {
-        int nr = cur.first + DR[i];
-        int nc = cur.second + DC[i];
-        // 範囲外は除く
+        int nr = cur.first + DR[i], nc = cur.second + DC[i];
         if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
           continue;
         if (visited[nr][nc])
           continue;
-        // EMPTY または STATION、またはゴールセルは通行可能とする
         if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
             (nr == r1 && nc == c1)) {
           candidates.push_back({nr, nc});
@@ -381,21 +371,16 @@ private:
           parent[nr][nc] = cur;
         }
       }
-      // A[i][j] の値が大きい順にソート（高スコアのマスを優先）
       sort(candidates.begin(), candidates.end(),
            [&](const Pos &p1, const Pos &p2) {
              return A[p1.first][p1.second] > A[p2.first][p2.second];
            });
-      // ソート済みの候補をキューに追加
       for (const Pos &p : candidates) {
         q.push(p);
       }
     }
-
     if (!found)
-      return path; // 経路が見つからなかった場合は空を返す
-
-    // 経路復元: endPos から parent をたどり start まで戻る
+      return path;
     Pos cur = endPos;
     while (!(cur.first == -1 && cur.second == -1)) {
       path.push_back(cur);
@@ -407,10 +392,8 @@ private:
     return path;
   }
 
-  // 方向を列挙
   enum Direction { UP = 0, RIGHT, DOWN, LEFT, UNKNOWN };
 
-  // (dr, dc) から方向を求める
   Direction getDirection(int dr, int dc) {
     if (dr == -1 && dc == 0)
       return UP;
@@ -423,104 +406,60 @@ private:
     return UNKNOWN;
   }
 
-  // 3点(prev, cur, next) から cur に配置すべきレール種別を返す
   int getRailType(const Pos &prev, const Pos &cur, const Pos &next) {
     int dr1 = cur.first - prev.first;
     int dc1 = cur.second - prev.second;
     int dr2 = next.first - cur.first;
     int dc2 = next.second - cur.second;
-
     Direction dir1 = getDirection(dr1, dc1);
     Direction dir2 = getDirection(dr2, dc2);
-
-    // 直線の場合
     if (dir1 == dir2) {
-      if (dir1 == UP || dir1 == DOWN) {
-        return RAIL_VERTICAL; // 縦レール
-      } else if (dir1 == LEFT || dir1 == RIGHT) {
-        return RAIL_HORIZONTAL; // 横レール
-      }
+      if (dir1 == UP || dir1 == DOWN)
+        return RAIL_VERTICAL;
+      else if (dir1 == LEFT || dir1 == RIGHT)
+        return RAIL_HORIZONTAL;
     }
-
-    // コーナーレールの場合
-    // ここでは、上→右, 右→下, 下→左, 左→上 が「右カーブ」
-    //           上→左, 左→下, 下→右, 右→上 が「左カーブ」
-    // という形でマッピングする。
-    // ※ 実際には問題設定でのレールIDに合わせる必要があります
-
-    // up->right / right->up は RAIL_RIGHT_UP
-    if ((dir1 == DOWN && dir2 == RIGHT) || (dir1 == LEFT && dir2 == UP)) {
-      return RAIL_RIGHT_UP; // 5
-    }
-    // right->down / down->right は RAIL_RIGHT_DOWN
-    if ((dir1 == LEFT && dir2 == DOWN) || (dir1 == UP && dir2 == RIGHT)) {
-      return RAIL_RIGHT_DOWN; // 6
-    }
-    // down->left / left->down は RAIL_LEFT_DOWN
-    if ((dir1 == UP && dir2 == LEFT) || (dir1 == RIGHT && dir2 == DOWN)) {
-      return RAIL_LEFT_DOWN; // 3
-    }
-    // up->left / left->up は RAIL_LEFT_UP
-    if ((dir1 == DOWN && dir2 == LEFT) || (dir1 == RIGHT && dir2 == UP)) {
-      return RAIL_LEFT_UP; // 4
-    }
-
-    // 何らかの理由で判定できなかった場合のフォールバック
-    // (例えば斜め移動が混じる等)
+    if ((dir1 == DOWN && dir2 == RIGHT) || (dir1 == LEFT && dir2 == UP))
+      return RAIL_RIGHT_UP;
+    if ((dir1 == LEFT && dir2 == DOWN) || (dir1 == UP && dir2 == RIGHT))
+      return RAIL_RIGHT_DOWN;
+    if ((dir1 == UP && dir2 == LEFT) || (dir1 == RIGHT && dir2 == DOWN))
+      return RAIL_LEFT_DOWN;
+    if ((dir1 == DOWN && dir2 == LEFT) || (dir1 == RIGHT && dir2 == UP))
+      return RAIL_LEFT_UP;
     return RAIL_HORIZONTAL;
-  } // 経路 path 上の各セルにレールを配置する
-  // 先頭・末尾は駅なので除外し、中間セルのみレールを置く
-  // path.size() が 2 以下の場合は中間セルがない
+  }
+
   void build_path_rails(const vector<Pos> &path) {
     if (path.size() <= 2)
       return;
     for (int i = 1; i < (int)path.size() - 1; i++) {
-      Pos prev = path[i - 1];
-      Pos cur = path[i];
-      Pos next = path[i + 1];
+      Pos prev = path[i - 1], cur = path[i], next = path[i + 1];
       int railType = getRailType(prev, cur, next);
       int rr = cur.first, cc = cur.second;
       build_rail(railType, rr, cc);
     }
   }
+
   bool isIsolated(int r, int c) {
     int idx = r * field.N + c;
-    // parents[idx] が -1 の場合は、まだ他の駅と繋がっていないとみなす
     return (field.uf.parents[idx] == -1);
-  }
-  // next_who に入っている候補 (人のインデックス) を A の値で降順にソートする
-  void sortNextWhoQueue(queue<int> &q) {
-    vector<int> candidates;
-    while (!q.empty()) {
-      candidates.push_back(q.front());
-      q.pop();
-    }
-    sort(candidates.begin(), candidates.end(), [&](int a, int b) {
-      int scoreA = A[home[a].first][home[a].second] +
-                   A[workplace[a].first][workplace[a].second];
-      int scoreB = A[home[b].first][home[b].second] +
-                   A[workplace[b].first][workplace[b].second];
-      return scoreA > scoreB; // 降順
-    });
-    for (int cand : candidates) {
-      q.push(cand);
-    }
   }
 
 public:
   Result solve() {
     vector<bool> used(M, false);
-    queue<int> next_who;
+    // next_who を vector で管理。候補は使われない限り保持する。
+    vector<int> next_who;
 
     while ((int)actions.size() < T) {
       int person_idx = -1;
       int r0, c0, r1, c1;
-      sortNextWhoQueue(next_who);
+      // まず、next_who 内の候補を A のスコアで降順にソートする
+      sortNextWhoVector(next_who);
 
-      // next_who キューから候補を探す
-      while (!next_who.empty()) {
-        int candidate = next_who.front();
-        next_who.pop();
+      // next_who から有効な候補を探す（全候補をチェック）
+      for (int candidate : next_who) {
         if (is_candidate_valid(candidate, r0, c0, r1, c1, used)) {
           person_idx = candidate;
           break;
@@ -535,18 +474,13 @@ public:
           }
         }
       }
-      // どちらでも見つからなければ何もしない
       if (person_idx == -1) {
         build_nothing();
       } else {
         used[person_idx] = true;
-        // 駅を建設
         build_station(r0, c0);
         build_station(r1, c1);
 
-        // 経路探索の開始点は、２駅のうち孤立している方を出発点にする。
-        // 両方孤立なら任意に r0,c0
-        // を出発点、両方連結済みなら経路敷設不要（BFSで空パスが返る）。
         Pos start, goal;
         if (isIsolated(r0, c0) && !isIsolated(r1, c1)) {
           start = {r0, c0};
@@ -555,17 +489,12 @@ public:
           start = {r1, c1};
           goal = {r0, c0};
         } else {
-          // 両方とも孤立している場合は、任意に (r0,c0) を出発点とする
           start = {r0, c0};
           goal = {r1, c1};
         }
 
-        // BFS 経路探索（find_path_bfs_with_warp 内では、
-        // 途中でゴール駅（もしくはゴールと同じ連結成分の駅）に到達した時点で終了する）
         vector<Pos> path = find_path_bfs_with_warp(start.first, start.second,
                                                    goal.first, goal.second, A);
-
-        // 経路が得られた場合、先頭・末尾は駅なので中間セルにレールを敷る
         if (!path.empty()) {
           for (int i = 1; i + 1 < (int)path.size(); i++) {
             int railType = getRailType(path[i - 1], path[i], path[i + 1]);
@@ -573,16 +502,14 @@ public:
             build_rail(railType, rr, cc);
           }
         }
-
-        // 駅付近 (r0,c0) / (r1,c1) の近くにある他の家or職場を next_who に登録
         for (int i = 0; i < M; i++) {
           if (used[i])
             continue;
-          if (distancePos(make_pair(r0, c0), home[i]) <= 2 ||
-              distancePos(make_pair(r0, c0), workplace[i]) <= 2 ||
-              distancePos(make_pair(r1, c1), home[i]) <= 2 ||
-              distancePos(make_pair(r1, c1), workplace[i]) <= 2) {
-            next_who.push(i);
+          if (distancePos({r0, c0}, home[i]) <= 2 ||
+              distancePos({r0, c0}, workplace[i]) <= 2 ||
+              distancePos({r1, c1}, home[i]) <= 2 ||
+              distancePos({r1, c1}, workplace[i]) <= 2) {
+            next_who.push_back(i);
           }
         }
       }
@@ -591,6 +518,7 @@ public:
     return Result(actions, money);
   }
 };
+
 // 各人について、home と workplace のマンハッタン距離を計算して返す関数
 vector<int> computeD(const vector<Pos> &home, const vector<Pos> &workplace) {
   int M = home.size();
