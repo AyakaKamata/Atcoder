@@ -490,9 +490,14 @@ public:
     int stationsNum = 2;
     bool station1Updated = false;
     bool station2Updated = false;
-
+    if (field.rail[station1.first][station1.second] == STATION) {
+      station1Updated = true;
+    }
+    if (field.rail[station2.first][station2.second] == STATION) {
+      station2Updated = true;
+    }
     // station1 の候補があれば更新
-    if (!stations_1.empty()) {
+    if (!station1Updated && !stations_1.empty()) {
       sortPosByA(stations_1);
       station1 = stations_1[0];
       station1Updated = true;
@@ -500,7 +505,7 @@ public:
     }
 
     // station2 の候補があれば更新
-    if (!stations_2.empty()) {
+    if (!station2Updated && !stations_2.empty()) {
       sortPosByA(stations_2);
       station2 = stations_2[0];
       station2Updated = true;
