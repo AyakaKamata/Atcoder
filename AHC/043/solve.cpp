@@ -20,13 +20,27 @@ vector<vector<int>> A;
 vector<vector<vector<int>>> B;
 vector<int> D;
 
-int distancePos(const Pos &a, const Pos &b) {
+int distancePos(const Pos a, const Pos b) {
   return abs(a.first - b.first) + abs(a.second - b.second);
 }
-
+// A[i][j] の値で降順ソート
 void sortPosByA(vector<Pos> &candidates) {
-  sort(candidates.begin(), candidates.end(), [&](const Pos &a, const Pos &b) {
-    return A[a.first][a.second] > A[b.first][b.second]; // 降順
+  std::sort(candidates.begin(), candidates.end(),
+            [](const Pos &a, const Pos &b) {
+              return A[a.first][a.second] > A[b.first][b.second];
+            });
+}
+
+// station からのマンハッタン距離で昇順、同じ距離なら A[i][j] の値で降順ソート
+void sortPosByD(vector<Pos> &candidates, const Pos station) {
+  // station の座標をローカル変数にキャッシュ
+  int sx = station.first, sy = station.second;
+  std::sort(
+      candidates.begin(), candidates.end(), [=](const Pos &p1, const Pos &p2) {
+        int d1 = abs(p1.first - sx) + abs(p1.second - sy);
+        int d2 = abs(p2.first - sx) + abs(p2.second - sy);
+        return (d1 == d2) ? (A[p1.first][p1.second] > A[p2.first][p2.second])
+                          : (d1 < d2);
   });
 }
 
@@ -34,7 +48,7 @@ class Action {
 public:
   int type;
   Pos pos;
-  Action(int type, Pos pos) : type(type), pos(pos) {}
+  Action(const int type, const Pos pos) : type(type), pos(pos) {}
   string toString() const {
     if (type == DO_NOTHING) {
       return "-1";
@@ -49,7 +63,7 @@ class Result {
 public:
   vector<Action> actions;
   int score;
-  Result(const vector<Action> &actions, int score)
+  Result(const vector<Action> &actions, const int score)
       : actions(actions), score(score) {}
   string toString() const {
     ostringstream oss;
@@ -69,7 +83,7 @@ public:
 
   UnionFind() { parents.assign(N * N, -1); }
 
-  int find_root(int idx) {
+  int find_root(const int idx) {
     if (parents[idx] < 0) {
       return idx;
     }
@@ -92,13 +106,13 @@ public:
     return members;
   }
 
-  bool is_same(Pos p, Pos q) {
+  bool is_same(const Pos p, const Pos q) {
     int p_idx = p.first * N + p.second;
     int q_idx = q.first * N + q.second;
     return find_root(p_idx) == find_root(q_idx);
   }
 
-  void unite(Pos p, Pos q) {
+  void unite(const Pos p, const Pos q) {
     int p_idx = p.first * N + p.second;
     int q_idx = q.first * N + q.second;
     int p_root = find_root(p_idx);
@@ -126,7 +140,7 @@ public:
   Field() : rail(N, vector<int>(N, EMPTY)), uf() {}
 
   // 駅とレールと連結を記録
-  void build(int type, Pos position) {
+  void build(const int type, const Pos position) {
     int r = position.first, c = position.second;
     rail[r][c] = type; // fieldに何があるか記録
 
@@ -170,9 +184,8 @@ public:
       }
     }
   }
-
   // 範囲内のrailを返す
-  vector<Pos> collect_rails(const Pos &pos) {
+  vector<Pos> collect_rails(const Pos pos) {
     vector<Pos> rails;
     for (int dr = -2; dr <= 2; dr++) {
       for (int dc = -2; dc <= 2; dc++) {
@@ -190,7 +203,7 @@ public:
   }
 
   // 範囲内の駅を返す
-  vector<Pos> collect_stations(const Pos &pos) {
+  vector<Pos> collect_stations(const Pos pos) {
     vector<Pos> stations;
     for (int dr = -2; dr <= 2; dr++) {
       for (int dc = -2; dc <= 2; dc++) {
@@ -207,7 +220,7 @@ public:
   }
 
   // 範囲内の駅の連結を確認する(収入計算用)
-  bool is_connected(const Pos &s, const Pos &t) {
+  bool is_connected(const Pos s, const Pos t) {
     vector<Pos> stations0 = collect_stations(s);
     vector<Pos> stations1 = collect_stations(t);
     for (auto &station0 : stations0) {
@@ -228,7 +241,7 @@ public:
   vector<Action> actions;
   vector<bool> used, tmp;
   enum Direction { UP = 0, RIGHT, DOWN, LEFT, UNKNOWN };
-  vector<int> next_who;
+  set<int> next_who;
   vector<int> visitedStamp; // サイズは N * N
   int currentStamp;
 
@@ -248,7 +261,7 @@ public:
     return income;
   }
 
-  Direction getDirection(int dr, int dc) {
+  Direction getDirection(const int dr, const int dc) {
     if (dr == -1 && dc == 0)
       return UP;
     if (dr == 1 && dc == 0)
@@ -261,7 +274,7 @@ public:
     return UNKNOWN; // or any other default value
   }
 
-  int getRailType(const Pos &prev, const Pos &cur, const Pos &next) {
+  int getRailType(const Pos prev, const Pos cur, const Pos next) {
     int dr1 = cur.first - prev.first;
     int dc1 = cur.second - prev.second;
     int dr2 = next.first - cur.first;
@@ -289,7 +302,7 @@ public:
     return RAIL_HORIZONTAL;
   }
 
-  void build_rail(int type, Pos position) {
+  void build_rail(const int type, const Pos position) {
     field.build(type, position);
     money -= COST_RAIL;
     actions.push_back(Action(type, position));
@@ -312,14 +325,14 @@ public:
   }
 
   // 駅を建設する
-  void build_station(Pos station) {
+  void build_station(const Pos station) {
     field.build(STATION, station);
     money -= COST_STATION;
     actions.push_back(Action(STATION, station));
     money += calc_income();
     for (int i : B[station.first][station.second]) {
       if (!used[i])
-        next_who.push_back(i);
+        next_who.insert(i);
     }
   }
 
@@ -327,6 +340,35 @@ public:
   void build_nothing() {
     actions.push_back(Action(DO_NOTHING, {0, 0}));
     money += calc_income();
+  }
+
+  // turnを行う
+  void turn(const Pos station1, const Pos station2, const vector<Pos> &path,
+            const int action) {
+
+    switch (action) {
+    case 0: {
+      build_path_rails(path);
+
+      break;
+    }
+    case 1: {
+      build_station(station1);
+      build_path_rails(path);
+
+      break;
+    }
+    case 2: {
+      build_station(station1);
+      build_station(station2);
+      build_path_rails(path);
+
+      break;
+    }
+    default: {
+      break;
+    }
+    }
   }
 
   // bfsで駅をつなぐ最短経路を探す
@@ -463,7 +505,8 @@ public:
   }
 
   // 候補をチェックして、スタートとゴールの座標とパスとケースを返す
-  bool check(int i, Pos &station1, Pos &station2, vector<Pos> &path, int &c) {
+  bool check(const int i, Pos &station1, Pos &station2, vector<Pos> &path,
+             int &c) {
     cout << "#check" << i << "\n";
     if (used[i] || tmp[i]) {
       cout << "#already checked" << "\n";
@@ -578,34 +621,6 @@ public:
     return false;
   }
 
-  // TODO
-  // turnを行う
-  void turn(Pos station1, Pos station2, vector<Pos> path, const int action) {
-
-    switch (action) {
-    case 0: {
-      build_path_rails(path);
-
-      break;
-    }
-    case 1: {
-      build_station(station1);
-      build_path_rails(path);
-
-      break;
-    }
-    case 2: {
-      build_station(station1);
-      build_station(station2);
-      build_path_rails(path);
-
-      break;
-    }
-    default: {
-      break;
-    }
-    }
-  }
   Result solve() {
     // next_who を vector で管理。候補は使われない限り保持する。
     bool init = true;
@@ -617,8 +632,6 @@ public:
         int person_idx = -1, c;
         Pos station1, station2;
         vector<Pos> path;
-        // まず、next_who 内の候補を A のスコアで降順にソートする
-        sort(next_who.begin(), next_who.end());
 
         // next_who から有効な候補を探す（全候補をチェック）
         for (int candidate : next_who) {
@@ -762,6 +775,5 @@ int main() {
   Solver solver;
   Result result = solver.solve();
   cout << result.toString() << "\n";
-  cerr << "score=" << result.score << "\n";
   return 0;
 }
