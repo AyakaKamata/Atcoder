@@ -434,7 +434,7 @@ public:
                       abs(p2.second - station2.second);
              // 例1: A の値が同じなら、より station2 に近い方を優先する
              if (d1 == d2)
-             return A[p1.first][p1.second] > A[p2.first][p2.second];
+               return A[p1.first][p1.second] > A[p2.first][p2.second];
              return d1 < d2;
            });
 
@@ -641,8 +641,12 @@ public:
                 person_idx = i;
                 break;
               }
-              if (!init && num == 5) {
-                used[i] = true;
+              // TODO
+              // used trueになってしまうので、大きすぎるとスコアが落ちる
+              if (!init && num == 3) {
+                if (M > 1000) {
+                  used[i] = true;
+                }
                 break;
               }
             }
