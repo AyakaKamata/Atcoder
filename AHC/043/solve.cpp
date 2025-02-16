@@ -330,166 +330,6 @@ public:
   }
 
   // bfsで駅をつなぐ最短経路を探す
-  // vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
-  //   vector<Pos> path;
-
-  //   if (field.uf.is_same(station1, station2)) {
-  //     cout << "#" << (int)actions.size() << " connected, no path" << "\n";
-  //     f = true;
-  //     return path;
-  //   }
-
-  //   queue<Pos> q;
-  //   vector<vector<bool>> visited(N, vector<bool>(N, false));
-  //   vector<vector<Pos>> parent(N, vector<Pos>(N, {-1, -1}));
-
-  //   visited[station1.first][station1.second] = true;
-  //   q.push(station1);
-
-  //   static const int DR[4] = {-1, 1, 0, 0};
-  //   static const int DC[4] = {0, 0, -1, 1};
-  //   bool found = false;
-  //   Pos endPos = {-1, -1};
-
-  //   while (!q.empty()) {
-  //     Pos cur = q.front();
-  //     q.pop();
-
-  //     if (cur == station2) {
-  //       found = true;
-  //       endPos = cur;
-  //       break;
-  //     }
-
-  //     // 駅が候補の場合
-  //     if (field.rail[cur.first][cur.second] == STATION) {
-  //       if (field.uf.is_same(cur, station2)) {
-  //         found = true;
-  //         endPos = cur;
-  //         break;
-  //       }
-  //     }
-
-  //     vector<Pos> candidates;
-  //     for (int i = 0; i < 4; i++) {
-  //       int nr = cur.first + DR[i], nc = cur.second + DC[i];
-  //       // 範囲確認
-  //       if (nr < 0 || nr >= N || nc < 0 || nc >= N)
-  //         continue;
-  //       if (visited[nr][nc])
-  //         continue;
-  //       // 更地or駅の時、pathの候補
-  //       if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
-  //           (nr == station2.first && nc == station2.second)) {
-  //         candidates.push_back({nr, nc});
-  //         visited[nr][nc] = true;
-  //         parent[nr][nc] = cur;
-  //       }
-  //     }
-
-  //     sort(candidates.begin(), candidates.end(),
-  //          [&](const Pos &p1, const Pos &p2) {
-  //            return A[p1.first][p1.second] > A[p2.first][p2.second];
-  //          });
-  //     for (const Pos &p : candidates) {
-  //       q.push(p);
-  //     }
-  //   }
-
-  //   if (!found) {
-  //     cout << "#" << (int)actions.size() << " no path" << "\n";
-  //     f = false;
-  //     return path;
-  //   }
-
-  //   Pos cur = endPos;
-  //   while (true) {
-  //     path.push_back(cur);
-  //     if (cur == station1)
-  //       break;
-  //     cur = parent[cur.first][cur.second];
-  //   }
-  //   reverse(path.begin(), path.end());
-  //   f = true;
-  //   return path;
-  // }
-
-  // vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
-  //   // すでに連結している場合はパス不要
-  //   if (field.uf.is_same(station1, station2)) {
-  //     cout << "#" << (int)actions.size() << " connected, no path" << "\n";
-  //     f = true;
-  //     return vector<Pos>();
-  //   }
-  //   const int INF = 1e9;
-  //   // dist: 各セルまでの最短距離、bestSum:
-  //   // その距離でのA値の和（初期値は非常に小さい値）
-  //   vector<vector<int>> dist(N, vector<int>(N, INF));
-  //   vector<vector<int>> bestSum(N, vector<int>(N, -1000000000));
-  //   vector<vector<Pos>> parent(N, vector<Pos>(N, {-1, -1}));
-  //   queue<Pos> q;
-
-  //   // 初期セル
-  //   dist[station1.first][station1.second] = 0;
-  //   bestSum[station1.first][station1.second] =
-  //       A[station1.first][station1.second];
-  //   q.push(station1);
-
-  //   static const int DR[4] = {-1, 1, 0, 0};
-  //   static const int DC[4] = {0, 0, -1, 1};
-
-  //   while (!q.empty()) {
-  //     Pos cur = q.front();
-  //     q.pop();
-  //     int d = dist[cur.first][cur.second];
-  //     int sum = bestSum[cur.first][cur.second];
-  //     // 隣接マスへ移動
-  //     for (int i = 0; i < 4; i++) {
-  //       int nr = cur.first + DR[i], nc = cur.second + DC[i];
-  //       if (nr < 0 || nr >= N || nc < 0 || nc >= N)
-  //         continue;
-  //       // 許容セル: 更地(EMPTY)か駅(STATION)または (nr,nc)==station2
-  //       if (!(field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
-  //             (nr == station2.first && nc == station2.second)))
-  //         continue;
-  //       int nd = d + 1;
-  //       int ns = sum + A[nr][nc];
-  //       // 新たな最短距離なら更新
-  //       if (nd < dist[nr][nc]) {
-  //         dist[nr][nc] = nd;
-  //         bestSum[nr][nc] = ns;
-  //         parent[nr][nc] = cur;
-  //         q.push({nr, nc});
-  //       } else if (nd == dist[nr][nc] &&)
-  //         // 同じ距離でも、より大きな和が得られた場合
-  //         else if (nd == dist[nr][nc] && ns > bestSum[nr][nc]) {
-  //           bestSum[nr][nc] = ns;
-  //           parent[nr][nc] = cur;
-  //           q.push({nr, nc});
-  //         }
-  //     }
-  //   }
-
-  //   if (dist[station2.first][station2.second] == INF) {
-  //     cout << "#" << (int)actions.size() << " no path" << "\n";
-  //     f = false;
-  //     return vector<Pos>();
-  //   }
-
-  //   // 経路復元
-  //   vector<Pos> path;
-  //   Pos cur = station2;
-  //   while (true) {
-  //     path.push_back(cur);
-  //     if (cur == station1)
-  //       break;
-  //     cur = parent[cur.first][cur.second];
-  //   }
-  //   f = true;
-  //   reverse(path.begin(), path.end());
-  //   return path;
-  // }
-
   vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
     vector<Pos> path;
 
@@ -509,6 +349,20 @@ public:
 
     visited[station1.first][station1.second] = true;
     q.push(station1);
+
+    // station1が駅(STATION)なら、その連結成分内の駅を一括でキューに追加する
+    if (field.rail[station1.first][station1.second] == STATION) {
+      vector<Pos> comp = field.uf.getAllMembers(station1);
+      // 含まれていなければ、連結成分内の各駅を探索候補に追加
+      for (const Pos &p : comp) {
+        if (!visited[p.first][p.second]) {
+          visited[p.first][p.second] = true;
+          // 経路復元用に、station1から p へとつながっているとみなす
+          parent[p.first][p.second] = station1;
+          q.push(p);
+        }
+      }
+    }
 
     while (!q.empty()) {
       Pos cur = q.front();
@@ -573,8 +427,17 @@ public:
       // A の値が大きい順に候補を並べ替え
       sort(candidates.begin(), candidates.end(),
            [&](const Pos &p1, const Pos &p2) {
+             // station2 までのマンハッタン距離を計算
+             int d1 = abs(p1.first - station2.first) +
+                      abs(p1.second - station2.second);
+             int d2 = abs(p2.first - station2.first) +
+                      abs(p2.second - station2.second);
+             // 例1: A の値が同じなら、より station2 に近い方を優先する
+             if (d1 == d2)
              return A[p1.first][p1.second] > A[p2.first][p2.second];
+             return d1 < d2;
            });
+
       for (const Pos &p : candidates) {
         q.push(p);
       }
