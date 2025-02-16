@@ -1,8 +1,5 @@
-
 #include <bits/stdc++.h>
-
 using namespace std;
-
 using Pos = pair<int, int>;
 
 const int EMPTY = -1;
@@ -17,49 +14,20 @@ const int RAIL_RIGHT_DOWN = 6;
 const int COST_STATION = 5000;
 const int COST_RAIL = 100;
 
-class UnionFind {
-public:
-  int n;
-  vector<int> parents;
-
-  UnionFind(int n) : n(n) { parents.assign(n * n, -1); }
-
-  int find_root(int idx) {
-    if (parents[idx] < 0) {
-      return idx;
-    }
-    parents[idx] = find_root(parents[idx]);
-    return parents[idx];
-  }
-
-  bool is_same(Pos p, Pos q) {
-    int p_idx = p.first * n + p.second;
-    int q_idx = q.first * n + q.second;
-    return find_root(p_idx) == find_root(q_idx);
-  }
-
-  void unite(Pos p, Pos q) {
-    int p_idx = p.first * n + p.second;
-    int q_idx = q.first * n + q.second;
-    int p_root = find_root(p_idx);
-    int q_root = find_root(q_idx);
-    if (p_root != q_root) {
-      int p_size = -parents[p_root];
-      int q_size = -parents[q_root];
-      if (p_size > q_size) {
-        // swap roots
-        int temp = p_root;
-        p_root = q_root;
-        q_root = temp;
-      }
-      parents[q_root] += parents[p_root];
-      parents[p_root] = q_root;
-    }
-  }
-};
+int N, M, K, T;
+vector<Pos> home, workplace;
+vector<vector<int>> A;
+vector<vector<vector<int>>> B;
+vector<int> D;
 
 int distancePos(const Pos &a, const Pos &b) {
   return abs(a.first - b.first) + abs(a.second - b.second);
+}
+
+void sortPosByA(vector<Pos> &candidates) {
+  sort(candidates.begin(), candidates.end(), [&](const Pos &a, const Pos &b) {
+    return A[a.first][a.second] > A[b.first][b.second]; // 降順
+  });
 }
 
 class Action {
@@ -76,11 +44,6 @@ public:
     }
   }
 };
-
-ostream &operator<<(ostream &os, const Action &act) {
-  os << act.toString();
-  return os;
-}
 
 class Result {
 public:
@@ -100,53 +63,74 @@ public:
   }
 };
 
-ostream &operator<<(ostream &os, const Result &res) {
-  os << res.toString();
-  return os;
-}
+class UnionFind {
+public:
+  vector<int> parents;
+
+  UnionFind() { parents.assign(N * N, -1); }
+
+  int find_root(int idx) {
+    if (parents[idx] < 0) {
+      return idx;
+    }
+    parents[idx] = find_root(parents[idx]);
+    return parents[idx];
+  }
+
+  vector<Pos> getAllMembers(const Pos p) {
+    vector<Pos> members;
+    // p のインデックス（行優先順に n * n のインデックスへ変換）
+    int root = find_root(p.first * N + p.second);
+    for (int idx = 0; idx < N * N; idx++) {
+      if (find_root(idx) == root) {
+        // インデックスを (row, col) に変換
+        int row = idx / N;
+        int col = idx % N;
+        members.push_back({row, col});
+      }
+    }
+    return members;
+  }
+
+  bool is_same(Pos p, Pos q) {
+    int p_idx = p.first * N + p.second;
+    int q_idx = q.first * N + q.second;
+    return find_root(p_idx) == find_root(q_idx);
+  }
+
+  void unite(Pos p, Pos q) {
+    int p_idx = p.first * N + p.second;
+    int q_idx = q.first * N + q.second;
+    int p_root = find_root(p_idx);
+    int q_root = find_root(q_idx);
+    if (p_root != q_root) {
+      int p_size = -parents[p_root];
+      int q_size = -parents[q_root];
+      if (p_size > q_size) {
+        // swap roots
+        int temp = p_root;
+        p_root = q_root;
+        q_root = temp;
+      }
+      parents[q_root] += parents[p_root];
+      parents[p_root] = q_root;
+    }
+  }
+};
 
 class Field {
 public:
-  int N;
   vector<vector<int>> rail;
   UnionFind uf;
 
-  Field(int N) : N(N), rail(N, vector<int>(N, EMPTY)), uf(N) {}
-  bool exist_station(int &r, int &c) {
-    for (int dr = -2; dr <= 2; dr++) {
-      for (int dc = -2; dc <= 2; dc++) {
-        if (abs(dr) + abs(dc) > 2)
-          continue;
-        int nr = r + dr, nc = c + dc;
-        // 配列の範囲内であるかチェック（Nはフィールドのサイズと仮定）
-        if (nr < 0 || nr >= N || nc < 0 || nc >= N)
-          continue;
-        if (rail[nr][nc] == STATION) {
-          r = nr;
-          c = nc;
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  int build(int type, int &r, int &c) {
-    if (type == STATION) {
-      if (exist_station(r, c)) {
-        return 0;
-      }
-    }
-    if (rail[r][c] == STATION) {
-      return 0; // assert
-    }
-    if (type >= 1 && type <= 6) {
-      if (rail[r][c] != EMPTY) {
-        return -1;
-      } // assert
-    }
-    rail[r][c] = type;
+  Field() : rail(N, vector<int>(N, EMPTY)), uf() {}
 
-    // 上 (up)
+  // 駅とレールと連結を記録
+  void build(int type, Pos position) {
+    int r = position.first, c = position.second;
+    rail[r][c] = type; // fieldに何があるか記録
+
+    // 上 (up)と連結
     if (type == STATION || type == RAIL_VERTICAL || type == RAIL_LEFT_UP ||
         type == RAIL_RIGHT_UP) {
       if (r > 0 &&
@@ -156,7 +140,7 @@ public:
         uf.unite({r, c}, {r - 1, c});
       }
     }
-    // 下 (down)
+    // 下 (down)と連結
     if (type == STATION || type == RAIL_VERTICAL || type == RAIL_LEFT_DOWN ||
         type == RAIL_RIGHT_DOWN) {
       if (r < N - 1 &&
@@ -185,22 +169,27 @@ public:
         uf.unite({r, c}, {r, c + 1});
       }
     }
-    return 1;
   }
 
-  bool is_connected(const Pos &s, const Pos &t) {
-    vector<Pos> stations0 = collect_stations(s);
-    vector<Pos> stations1 = collect_stations(t);
-    for (auto &station0 : stations0) {
-      for (auto &station1 : stations1) {
-        if (uf.is_same(station0, station1)) {
-          return true;
+  // 範囲内のrailを返す
+  vector<Pos> collect_rails(const Pos &pos) {
+    vector<Pos> rails;
+    for (int dr = -2; dr <= 2; dr++) {
+      for (int dc = -2; dc <= 2; dc++) {
+        if (abs(dr) + abs(dc) > 2)
+          continue;
+        int r = pos.first + dr;
+        int c = pos.second + dc;
+        if (r >= 0 && r < N && c >= 0 && c < N && rail[r][c] >= 1 &&
+            rail[r][c] <= 6) {
+          rails.push_back({r, c});
         }
       }
     }
-    return false;
+    return rails;
   }
 
+  // 範囲内の駅を返す
   vector<Pos> collect_stations(const Pos &pos) {
     vector<Pos> stations;
     for (int dr = -2; dr <= 2; dr++) {
@@ -216,183 +205,48 @@ public:
     }
     return stations;
   }
+
+  // 範囲内の駅の連結を確認する(収入計算用)
+  bool is_connected(const Pos &s, const Pos &t) {
+    vector<Pos> stations0 = collect_stations(s);
+    vector<Pos> stations1 = collect_stations(t);
+    for (auto &station0 : stations0) {
+      for (auto &station1 : stations1) {
+        if (uf.is_same(station0, station1)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 };
 
 class Solver {
 public:
-  int N, M, K, T;
-  vector<Pos> home, workplace;
   Field field;
   int money;
   vector<Action> actions;
-  vector<vector<int>> A;
+  vector<bool> used, tmp;
+  enum Direction { UP = 0, RIGHT, DOWN, LEFT, UNKNOWN };
+  vector<int> next_who;
+  vector<int> visitedStamp; // サイズは N * N
+  int currentStamp;
 
-  Solver(int N, int M, int K, int T, const vector<Pos> &home,
-         const vector<Pos> &workplace, vector<vector<int>> A)
-      : N(N), M(M), K(K), T(T), home(home), workplace(workplace), A(A),
-        field(N), money(K) {}
+  Solver() : field(), money(K), used(M, false), tmp(M, false), currentStamp(0) {
+    visitedStamp.resize(N * N, 0);
+  }
 
+  // 収入を計算する
   int calc_income() {
     int income = 0;
     for (int i = 0; i < M; i++) {
       if (field.is_connected(home[i], workplace[i])) {
-        income += distancePos(home[i], workplace[i]);
+        income += D[i];
+        used[i] = true;
       }
     }
     return income;
   }
-
-  void build_rail(int type, int &r, int &c) {
-    int a = field.build(type, r, c);
-    if (a == 0 || a == -1) {
-      actions.push_back(Action(DO_NOTHING, {0, 0}));
-      return;
-    } else {
-      money -= COST_RAIL;
-      actions.push_back(Action(type, {r, c}));
-    }
-  }
-
-  void build_station(int &r, int &c) {
-    // マンハッタン距離2以内に線路がある場合、駅をその線路上に移す
-    bool moved = false;
-    for (int dr = -2; dr <= 2 && !moved; dr++) {
-      for (int dc = -2; dc <= 2 && !moved; dc++) {
-        if (abs(dr) + abs(dc) <= 2) {
-          int nr = r + dr, nc = c + dc;
-          if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
-            continue;
-          int cell = field.rail[nr][nc];
-          if (cell >= RAIL_HORIZONTAL && cell <= RAIL_RIGHT_DOWN) {
-            r = nr;
-            c = nc;
-            moved = true;
-          }
-        }
-      }
-    }
-
-    int a = field.build(STATION, r, c);
-    if (a == 0 || a == -1) {
-      actions.push_back(Action(DO_NOTHING, {0, 0}));
-      return;
-    } else {
-      money -= COST_STATION;
-      actions.push_back(Action(STATION, {r, c}));
-    }
-  }
-
-  void build_nothing() { actions.push_back(Action(DO_NOTHING, {0, 0})); }
-
-private:
-  // 候補の有効性チェック（既存実装と同様）
-  bool is_candidate_valid(int candidate, int &r0, int &c0, int &r1, int &c1,
-                          const vector<bool> &used) {
-    if (used[candidate])
-      return false;
-    r0 = home[candidate].first;
-    c0 = home[candidate].second;
-    r1 = workplace[candidate].first;
-    c1 = workplace[candidate].second;
-    int d = distancePos({r0, c0}, {r1, c1});
-    bool f1 = field.exist_station(r0, c0);
-    bool f2 = field.exist_station(r1, c1);
-    int stationsNeeded = 0;
-    if (!f1)
-      stationsNeeded++;
-    if (!f2)
-      stationsNeeded++;
-    int d_ = distancePos({r0, c0}, {r1, c1});
-    int railsNeeded = max(0, d_ - 1);
-    int costRequired = stationsNeeded * COST_STATION + railsNeeded * COST_RAIL;
-    if (money >= costRequired &&
-        T - (int)actions.size() >= (stationsNeeded + railsNeeded) &&
-        d * (T - (int)actions.size() - (stationsNeeded + railsNeeded)) >=
-            costRequired) {
-      return true;
-    }
-    return false;
-  }
-
-  // next_who に入っている候補 (人のインデックス) を A の値で降順にソートする
-  void sortNextWhoVector(vector<int> &candidates) {
-    sort(candidates.begin(), candidates.end(), [&](int a, int b) {
-      int scoreA = A[home[a].first][home[a].second] +
-                   A[workplace[a].first][workplace[a].second];
-      int scoreB = A[home[b].first][home[b].second] +
-                   A[workplace[b].first][workplace[b].second];
-      return scoreA > scoreB; // 降順
-    });
-  }
-
-  vector<Pos> find_path_bfs_with_warp(int r0, int c0, int r1, int c1,
-                                      const vector<vector<int>> A) {
-    vector<Pos> path;
-    if (field.rail[r0][c0] == STATION &&
-        field.is_connected({r0, c0}, {r1, c1})) {
-      return path;
-    }
-    queue<Pos> q;
-    vector<vector<bool>> visited(field.N, vector<bool>(field.N, false));
-    vector<vector<Pos>> parent(field.N, vector<Pos>(field.N, {-1, -1}));
-    Pos start = {r0, c0}, goal = {r1, c1};
-    visited[r0][c0] = true;
-    q.push(start);
-    static const int DR[4] = {-1, 1, 0, 0};
-    static const int DC[4] = {0, 0, -1, 1};
-    bool found = false;
-    Pos endPos = {-1, -1};
-    while (!q.empty()) {
-      Pos cur = q.front();
-      q.pop();
-      if (cur == goal) {
-        found = true;
-        endPos = cur;
-        break;
-      }
-      if (field.rail[cur.first][cur.second] == STATION) {
-        if (field.is_connected(cur, goal)) {
-          found = true;
-          endPos = cur;
-          break;
-        }
-      }
-      vector<Pos> candidates;
-      for (int i = 0; i < 4; i++) {
-        int nr = cur.first + DR[i], nc = cur.second + DC[i];
-        if (nr < 0 || nr >= field.N || nc < 0 || nc >= field.N)
-          continue;
-        if (visited[nr][nc])
-          continue;
-        if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
-            (nr == r1 && nc == c1)) {
-          candidates.push_back({nr, nc});
-          visited[nr][nc] = true;
-          parent[nr][nc] = cur;
-        }
-      }
-      sort(candidates.begin(), candidates.end(),
-           [&](const Pos &p1, const Pos &p2) {
-             return A[p1.first][p1.second] > A[p2.first][p2.second];
-           });
-      for (const Pos &p : candidates) {
-        q.push(p);
-      }
-    }
-    if (!found)
-      return path;
-    Pos cur = endPos;
-    while (!(cur.first == -1 && cur.second == -1)) {
-      path.push_back(cur);
-      if (cur == start)
-        break;
-      cur = parent[cur.first][cur.second];
-    }
-    reverse(path.begin(), path.end());
-    return path;
-  }
-
-  enum Direction { UP = 0, RIGHT, DOWN, LEFT, UNKNOWN };
 
   Direction getDirection(int dr, int dc) {
     if (dr == -1 && dc == 0)
@@ -403,7 +257,8 @@ private:
       return RIGHT;
     if (dr == 0 && dc == -1)
       return LEFT;
-    return UNKNOWN;
+    // Default case to handle unexpected input
+    return UNKNOWN; // or any other default value
   }
 
   int getRailType(const Pos &prev, const Pos &cur, const Pos &next) {
@@ -411,6 +266,10 @@ private:
     int dc1 = cur.second - prev.second;
     int dr2 = next.first - cur.first;
     int dc2 = next.second - cur.second;
+    if (dr1 < -1 || dr1 > 1 || dc1 < -1 || dc1 > 1 || dr2 < -1 || dr2 > 1 ||
+        dc2 < -1 || dc2 > 1) {
+      return STATION;
+    }
     Direction dir1 = getDirection(dr1, dc1);
     Direction dir2 = getDirection(dr2, dc2);
     if (dir1 == dir2) {
@@ -430,121 +289,531 @@ private:
     return RAIL_HORIZONTAL;
   }
 
+  void build_rail(int type, Pos position) {
+    field.build(type, position);
+    money -= COST_RAIL;
+    actions.push_back(Action(type, position));
+    money += calc_income();
+  }
+
+  // pathにレールを建設する
   void build_path_rails(const vector<Pos> &path) {
-    if (path.size() <= 2)
-      return;
     for (int i = 1; i < (int)path.size() - 1; i++) {
       Pos prev = path[i - 1], cur = path[i], next = path[i + 1];
+      if (field.rail[cur.first][cur.second] == STATION)
+        continue;
+
       int railType = getRailType(prev, cur, next);
-      int rr = cur.first, cc = cur.second;
-      build_rail(railType, rr, cc);
+      if (railType == STATION) {
+        continue;
+      }
+      build_rail(railType, cur);
     }
   }
 
-  bool isIsolated(int r, int c) {
-    int idx = r * field.N + c;
-    return (field.uf.parents[idx] == -1);
+  // 駅を建設する
+  void build_station(Pos station) {
+    field.build(STATION, station);
+    money -= COST_STATION;
+    actions.push_back(Action(STATION, station));
+    money += calc_income();
+    for (int i : B[station.first][station.second]) {
+      if (!used[i])
+        next_who.push_back(i);
+    }
   }
 
-public:
-  Result solve() {
-    vector<bool> used(M, false);
-    // next_who を vector で管理。候補は使われない限り保持する。
-    vector<int> next_who;
+  // スキップ
+  void build_nothing() {
+    actions.push_back(Action(DO_NOTHING, {0, 0}));
+    money += calc_income();
+  }
 
-    while ((int)actions.size() < T) {
-      int person_idx = -1;
-      int r0, c0, r1, c1;
-      // まず、next_who 内の候補を A のスコアで降順にソートする
-      sortNextWhoVector(next_who);
+  // bfsで駅をつなぐ最短経路を探す
+  // vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
+  //   vector<Pos> path;
 
-      // next_who から有効な候補を探す（全候補をチェック）
-      for (int candidate : next_who) {
-        if (is_candidate_valid(candidate, r0, c0, r1, c1, used)) {
-          person_idx = candidate;
+  //   if (field.uf.is_same(station1, station2)) {
+  //     cout << "#" << (int)actions.size() << " connected, no path" << "\n";
+  //     f = true;
+  //     return path;
+  //   }
+
+  //   queue<Pos> q;
+  //   vector<vector<bool>> visited(N, vector<bool>(N, false));
+  //   vector<vector<Pos>> parent(N, vector<Pos>(N, {-1, -1}));
+
+  //   visited[station1.first][station1.second] = true;
+  //   q.push(station1);
+
+  //   static const int DR[4] = {-1, 1, 0, 0};
+  //   static const int DC[4] = {0, 0, -1, 1};
+  //   bool found = false;
+  //   Pos endPos = {-1, -1};
+
+  //   while (!q.empty()) {
+  //     Pos cur = q.front();
+  //     q.pop();
+
+  //     if (cur == station2) {
+  //       found = true;
+  //       endPos = cur;
+  //       break;
+  //     }
+
+  //     // 駅が候補の場合
+  //     if (field.rail[cur.first][cur.second] == STATION) {
+  //       if (field.uf.is_same(cur, station2)) {
+  //         found = true;
+  //         endPos = cur;
+  //         break;
+  //       }
+  //     }
+
+  //     vector<Pos> candidates;
+  //     for (int i = 0; i < 4; i++) {
+  //       int nr = cur.first + DR[i], nc = cur.second + DC[i];
+  //       // 範囲確認
+  //       if (nr < 0 || nr >= N || nc < 0 || nc >= N)
+  //         continue;
+  //       if (visited[nr][nc])
+  //         continue;
+  //       // 更地or駅の時、pathの候補
+  //       if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
+  //           (nr == station2.first && nc == station2.second)) {
+  //         candidates.push_back({nr, nc});
+  //         visited[nr][nc] = true;
+  //         parent[nr][nc] = cur;
+  //       }
+  //     }
+
+  //     sort(candidates.begin(), candidates.end(),
+  //          [&](const Pos &p1, const Pos &p2) {
+  //            return A[p1.first][p1.second] > A[p2.first][p2.second];
+  //          });
+  //     for (const Pos &p : candidates) {
+  //       q.push(p);
+  //     }
+  //   }
+
+  //   if (!found) {
+  //     cout << "#" << (int)actions.size() << " no path" << "\n";
+  //     f = false;
+  //     return path;
+  //   }
+
+  //   Pos cur = endPos;
+  //   while (true) {
+  //     path.push_back(cur);
+  //     if (cur == station1)
+  //       break;
+  //     cur = parent[cur.first][cur.second];
+  //   }
+  //   reverse(path.begin(), path.end());
+  //   f = true;
+  //   return path;
+  // }
+
+  // vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
+  //   // すでに連結している場合はパス不要
+  //   if (field.uf.is_same(station1, station2)) {
+  //     cout << "#" << (int)actions.size() << " connected, no path" << "\n";
+  //     f = true;
+  //     return vector<Pos>();
+  //   }
+  //   const int INF = 1e9;
+  //   // dist: 各セルまでの最短距離、bestSum:
+  //   // その距離でのA値の和（初期値は非常に小さい値）
+  //   vector<vector<int>> dist(N, vector<int>(N, INF));
+  //   vector<vector<int>> bestSum(N, vector<int>(N, -1000000000));
+  //   vector<vector<Pos>> parent(N, vector<Pos>(N, {-1, -1}));
+  //   queue<Pos> q;
+
+  //   // 初期セル
+  //   dist[station1.first][station1.second] = 0;
+  //   bestSum[station1.first][station1.second] =
+  //       A[station1.first][station1.second];
+  //   q.push(station1);
+
+  //   static const int DR[4] = {-1, 1, 0, 0};
+  //   static const int DC[4] = {0, 0, -1, 1};
+
+  //   while (!q.empty()) {
+  //     Pos cur = q.front();
+  //     q.pop();
+  //     int d = dist[cur.first][cur.second];
+  //     int sum = bestSum[cur.first][cur.second];
+  //     // 隣接マスへ移動
+  //     for (int i = 0; i < 4; i++) {
+  //       int nr = cur.first + DR[i], nc = cur.second + DC[i];
+  //       if (nr < 0 || nr >= N || nc < 0 || nc >= N)
+  //         continue;
+  //       // 許容セル: 更地(EMPTY)か駅(STATION)または (nr,nc)==station2
+  //       if (!(field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
+  //             (nr == station2.first && nc == station2.second)))
+  //         continue;
+  //       int nd = d + 1;
+  //       int ns = sum + A[nr][nc];
+  //       // 新たな最短距離なら更新
+  //       if (nd < dist[nr][nc]) {
+  //         dist[nr][nc] = nd;
+  //         bestSum[nr][nc] = ns;
+  //         parent[nr][nc] = cur;
+  //         q.push({nr, nc});
+  //       } else if (nd == dist[nr][nc] &&)
+  //         // 同じ距離でも、より大きな和が得られた場合
+  //         else if (nd == dist[nr][nc] && ns > bestSum[nr][nc]) {
+  //           bestSum[nr][nc] = ns;
+  //           parent[nr][nc] = cur;
+  //           q.push({nr, nc});
+  //         }
+  //     }
+  //   }
+
+  //   if (dist[station2.first][station2.second] == INF) {
+  //     cout << "#" << (int)actions.size() << " no path" << "\n";
+  //     f = false;
+  //     return vector<Pos>();
+  //   }
+
+  //   // 経路復元
+  //   vector<Pos> path;
+  //   Pos cur = station2;
+  //   while (true) {
+  //     path.push_back(cur);
+  //     if (cur == station1)
+  //       break;
+  //     cur = parent[cur.first][cur.second];
+  //   }
+  //   f = true;
+  //   reverse(path.begin(), path.end());
+  //   return path;
+  // }
+
+  vector<Pos> bfs(Pos station1, Pos station2, bool &f) {
+    vector<Pos> path;
+
+    if (field.uf.is_same(station1, station2)) {
+      cout << "#" << (int)actions.size() << " connected, no path" << "\n";
+      f = true;
+      return path;
+    }
+
+    queue<Pos> q;
+    vector<vector<bool>> visited(N, vector<bool>(N, false));
+    vector<vector<Pos>> parent(N, vector<Pos>(N, {-1, -1}));
+    static const int DR[4] = {-1, 1, 0, 0};
+    static const int DC[4] = {0, 0, -1, 1};
+    bool found = false;
+    Pos endPos = {-1, -1};
+
+    visited[station1.first][station1.second] = true;
+    q.push(station1);
+
+    while (!q.empty()) {
+      Pos cur = q.front();
+      q.pop();
+
+      // 終点に到達したら終了
+      if (cur == station2) {
+        found = true;
+        endPos = cur;
+        break;
+      }
+
+      // 現在のセルが駅なら、その連結成分全体をキューに追加する
+      if (field.rail[cur.first][cur.second] == STATION) {
+        vector<Pos> comp = field.uf.getAllMembers(cur);
+        for (const Pos &p : comp) {
+          // 終点が含まれていれば探索終了
+          if (p == station2) {
+            parent[p.first][p.second] = cur;
+            found = true;
+            endPos = p;
+            break;
+          }
+          if (found) {
+            break;
+          }
+          if (field.rail[p.first][p.second] == STATION &&
+              !visited[p.first][p.second]) {
+            visited[p.first][p.second] = true;
+            // 連結成分内の各駅は、cur から連結しているとみなす
+            parent[p.first][p.second] = cur;
+            // 終点が含まれていれば探索終了
+            if (p == station2) {
+              found = true;
+              endPos = p;
+              break;
+            }
+            q.push(p);
+          }
+        }
+        if (found)
           break;
+      }
+
+      vector<Pos> candidates;
+      for (int i = 0; i < 4; i++) {
+        int nr = cur.first + DR[i], nc = cur.second + DC[i];
+        // 範囲確認
+        if (nr < 0 || nr >= N || nc < 0 || nc >= N)
+          continue;
+        if (visited[nr][nc])
+          continue;
+        // 更地、駅、もしくは終点であれば候補とする
+        if (field.rail[nr][nc] == EMPTY || field.rail[nr][nc] == STATION ||
+            (nr == station2.first && nc == station2.second)) {
+          candidates.push_back({nr, nc});
+          visited[nr][nc] = true;
+          parent[nr][nc] = cur;
         }
       }
-      // 見つからなければ全体から探す
-      if (person_idx == -1) {
-        for (int i = 0; i < M; i++) {
-          if (is_candidate_valid(i, r0, c0, r1, c1, used)) {
-            person_idx = i;
+
+      // A の値が大きい順に候補を並べ替え
+      sort(candidates.begin(), candidates.end(),
+           [&](const Pos &p1, const Pos &p2) {
+             return A[p1.first][p1.second] > A[p2.first][p2.second];
+           });
+      for (const Pos &p : candidates) {
+        q.push(p);
+      }
+    }
+
+    if (!found) {
+      cout << "#" << (int)actions.size() << " no path" << "\n";
+      f = false;
+      return path;
+    }
+
+    // 経路復元
+    Pos cur = endPos;
+    while (true) {
+      path.push_back(cur);
+      if (cur == station1)
+        break;
+      cur = parent[cur.first][cur.second];
+    }
+    reverse(path.begin(), path.end());
+    f = true;
+    return path;
+  }
+
+  // 候補をチェックして、スタートとゴールの座標とパスとケースを返す
+  bool check(int i, Pos &station1, Pos &station2, vector<Pos> &path, int &c) {
+    cout << "#check" << i << "\n";
+    if (used[i] || tmp[i]) {
+      cout << "#already checked" << "\n";
+      return false;
+    }
+    // TODO
+    // 計算量がやけにふえてしまうので、一回チェックしたら次のターンまでスルーする
+    tmp[i] = true;
+    station1 = home[i];
+    station2 = workplace[i];
+    Pos ori1 = station1, ori2 = station2;
+    int income = distancePos(station1, station2);
+    vector<Pos> stations_1 = field.collect_stations(station1);
+    vector<Pos> stations_2 = field.collect_stations(station2);
+    vector<Pos> rails_1 = field.collect_rails(station1);
+    vector<Pos> rails_2 = field.collect_rails(station2);
+    bool f = false;
+
+    // TODO
+    //  station1,2を移動させる処理
+    // まだ密集地に移動していない。。
+    // とりあえず候補の１個目だけ適用
+    // 初期状態では、両駅とも元の状態が利用可能（stationsNum = 2）
+    int stationsNum = 2;
+    bool station1Updated = false;
+    bool station2Updated = false;
+
+    // station1 の候補があれば更新
+    if (!stations_1.empty()) {
+      sortPosByA(stations_1);
+      station1 = stations_1[0];
+      station1Updated = true;
+      stationsNum--;
+    }
+
+    // station2 の候補があれば更新
+    if (!stations_2.empty()) {
+      sortPosByA(stations_2);
+      station2 = stations_2[0];
+      station2Updated = true;
+      stationsNum--;
+    }
+
+    // もし駅候補で更新されなかった駅があれば、レール候補で更新する
+    if (stationsNum > 0) {
+      if (!station1Updated && !rails_1.empty()) {
+        sortPosByA(rails_1);
+        station1 = rails_1[0];
+      }
+      if (!station2Updated && !rails_2.empty()) {
+        sortPosByA(rails_2);
+        station2 = rails_2[0];
+      }
+    }
+
+    // 片方だけ駅候補で更新されていた場合、必要なら入れ替える（元のコードでは c
+    // == -1 の場合に swap していた）
+    if (station1Updated && !station2Updated) {
+      swap(station1, station2);
+      cout << "#swap" << "\n";
+    }
+
+    // 修正後の station1, station2 で bfs を実施
+    path = bfs(station1, station2, f);
+    // bfs で経路が見つからなかった場合は、オリジナルの座標で再試行
+    if (!f) {
+      stationsNum = 2; // 必要なら再初期化
+      station1Updated = false;
+      station2Updated = false;
+      path = bfs(ori1, ori2, f);
+    }
+
+    if (station1Updated && station2Updated) {
+      c = 0;
+    } else if (station1Updated || station2Updated) {
+      c = 1;
+    } else {
+      c = 2;
+    }
+    ////
+    if (f) {
+      int railsNeeded = max(0, (int)path.size() - 2);
+      int costRequired = stationsNum * COST_STATION + railsNeeded * COST_RAIL;
+      int left_turn = T - (int)actions.size() - (stationsNum + railsNeeded);
+      if ((money >= costRequired) && (income * left_turn >= costRequired)) {
+        used[i] = true;
+        cout << "#case" << c << "\n";
+        cout << "#start" << station1.first << " " << station1.second << "\n";
+        cout << "#goal(might exist)" << station2.first << " " << station2.second
+             << "\n";
+
+        return true;
+      } else {
+        if (!(money >= costRequired)) {
+          cout << "#cost too high" << "\n";
+        }
+        if (!(income * left_turn >= costRequired)) {
+          cout << "#income not enough" << "\n";
+        }
+        return false;
+      }
+    } else {
+      cout << "#path not found" << "\n";
+      return false;
+    }
+    cout << "#error unknown" << "\n";
+    return false;
+  }
+
+  // TODO
+  // turnを行う
+  void turn(Pos station1, Pos station2, vector<Pos> path, const int action) {
+
+    switch (action) {
+    case 0: {
+      build_path_rails(path);
+
+      break;
+    }
+    case 1: {
+      build_station(station1);
+      build_path_rails(path);
+
+      break;
+    }
+    case 2: {
+      build_station(station1);
+      build_station(station2);
+      build_path_rails(path);
+
+      break;
+    }
+    default: {
+      break;
+    }
+    }
+  }
+  Result solve() {
+    // next_who を vector で管理。候補は使われない限り保持する。
+    bool init = true;
+    while ((int)actions.size() < T) {
+      tmp.assign(M, false);
+      if (money < COST_RAIL) {
+        build_nothing();
+      } else {
+        int person_idx = -1, c;
+        Pos station1, station2;
+        vector<Pos> path;
+        // まず、next_who 内の候補を A のスコアで降順にソートする
+        sort(next_who.begin(), next_who.end());
+
+        // next_who から有効な候補を探す（全候補をチェック）
+        for (int candidate : next_who) {
+          bool f = check(candidate, station1, station2, path, c);
+          if (f) {
+            person_idx = candidate;
             break;
           }
         }
-      }
-      if (person_idx == -1) {
-        build_nothing();
-      } else {
-        used[person_idx] = true;
-        build_station(r0, c0);
-        build_station(r1, c1);
-
-        Pos start, goal;
-        if (isIsolated(r0, c0) && !isIsolated(r1, c1)) {
-          start = {r0, c0};
-          goal = {r1, c1};
-        } else if (!isIsolated(r0, c0) && isIsolated(r1, c1)) {
-          start = {r1, c1};
-          goal = {r0, c0};
+        // TODO
+        // 重いので、適当にした
+        //  見つからなければused=falseの５人だけ探す
+        if (person_idx == -1) {
+          int num = 0;
+          for (int i = 0; i < M; i++) {
+            if (!used[i]) {
+              num++;
+              bool f = check(i, station1, station2, path, c);
+              if (f) {
+                person_idx = i;
+                break;
+              }
+              if (!init && num == 5) {
+                used[i] = true;
+                break;
+              }
+            }
+          }
+        }
+        if (person_idx == -1) {
+          build_nothing();
         } else {
-          start = {r0, c0};
-          goal = {r1, c1};
-        }
-
-        vector<Pos> path = find_path_bfs_with_warp(start.first, start.second,
-                                                   goal.first, goal.second, A);
-        if (!path.empty()) {
-          for (int i = 1; i + 1 < (int)path.size(); i++) {
-            int railType = getRailType(path[i - 1], path[i], path[i + 1]);
-            int rr = path[i].first, cc = path[i].second;
-            build_rail(railType, rr, cc);
-          }
-        }
-        for (int i = 0; i < M; i++) {
-          if (used[i])
-            continue;
-          if (distancePos({r0, c0}, home[i]) <= 2 ||
-              distancePos({r0, c0}, workplace[i]) <= 2 ||
-              distancePos({r1, c1}, home[i]) <= 2 ||
-              distancePos({r1, c1}, workplace[i]) <= 2) {
-            next_who.push_back(i);
-          }
+          turn(station1, station2, path, c);
         }
       }
-      money += calc_income();
+      init = false;
     }
     return Result(actions, money);
   }
 };
 
 // 各人について、home と workplace のマンハッタン距離を計算して返す関数
-vector<int> computeD(const vector<Pos> &home, const vector<Pos> &workplace) {
-  int M = home.size();
+vector<int> computeD() {
   vector<int> distances(M, 0);
   for (int i = 0; i < M; i++) {
     distances[i] = distancePos(home[i], workplace[i]);
-    cout << "#" << i << " " << distances[i] << endl;
   }
   return distances;
 }
 
 // A[i][j] を計算する関数
-vector<vector<int>> computeA(int N, const vector<Pos> &home,
-                             const vector<Pos> &workplace) {
-  int M = home.size();
+vector<vector<int>> computeA() {
   vector<vector<int>> A(N, vector<int>(N, 0));
-  vector<int> D = computeD(home, workplace);
+  vector<int> D = computeD();
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       int count = 0;
       for (int p = 0; p < M; p++) {
         // home[p] が (i,j) からマンハッタン距離2以内ならカウント
-        if (abs(home[p].first - i) + abs(home[p].second - j) <= 2)
+        if (distancePos(home[p], {i, j}) <= 2)
           count += D[p];
         // workplace[p] も同様
-        if (abs(workplace[p].first - i) + abs(workplace[p].second - j) <= 2)
+        if (distancePos(home[p], {i, j}) <= 2)
           count += D[p];
       }
       A[i][j] = count;
@@ -553,11 +822,25 @@ vector<vector<int>> computeA(int N, const vector<Pos> &home,
   return A;
 }
 
-// 各人のスコア（home と workplace の A の値の合計）で降順に並び替える関数
-void sortByScore(int N, vector<Pos> &home, vector<Pos> &workplace,
-                 vector<vector<int>> A) {
-  int M = home.size();
+vector<vector<vector<int>>> computeB() {
+  B.resize(N, vector<vector<int>>(N));
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      for (int p = 0; p < M; p++) {
+        // home[p] が (i,j) からマンハッタン距離2以内ならカウント
+        if (distancePos(home[p], {i, j}) <= 2)
+          B[i][j].push_back(p);
+        // workplace[p] も同様
+        if (distancePos(home[p], {i, j}) <= 2)
+          B[i][j].push_back(p);
+      }
+    }
+  }
+  return B;
+}
 
+// 各人のスコア（home と workplace の A の値の合計）で降順に並び替える関数
+void sortByScore() {
   vector<int> score(M, 0);
   for (int p = 0; p < M; p++) {
     score[p] = A[home[p].first][home[p].second] +
@@ -570,6 +853,9 @@ void sortByScore(int N, vector<Pos> &home, vector<Pos> &workplace,
   // 降順ソート: score の値が大きい順に並ぶようにする
   sort(idx.begin(), idx.end(),
        [&](int a, int b) { return score[a] > score[b]; });
+  for (int i = 0; i < M; i++) {
+    cout << "#" << i << " " << idx[i] << "\n";
+  }
   vector<Pos> sortedHome, sortedWorkplace;
   for (int i = 0; i < M; i++) {
     sortedHome.push_back(home[idx[i]]);
@@ -578,25 +864,30 @@ void sortByScore(int N, vector<Pos> &home, vector<Pos> &workplace,
   home = sortedHome;
   workplace = sortedWorkplace;
 }
-
 int main() {
   ios::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  int N, M, K, T;
   cin >> N >> M >> K >> T;
-  vector<Pos> home(M), workplace(M);
+  home.resize(M);
+  workplace.resize(M);
   for (int i = 0; i < M; i++) {
     int r0, c0, r1, c1;
     cin >> r0 >> c0 >> r1 >> c1;
     home[i] = {r0, c0};
     workplace[i] = {r1, c1};
   }
-  vector<vector<int>> A = computeA(N, home, workplace);
+  A.resize(N, vector<int>(N));
+  A = computeA();
   // home, workplace に対してスコア順に並び替える
-  sortByScore(N, home, workplace, A);
+  sortByScore();
 
-  Solver solver(N, M, K, T, home, workplace, A);
+  B.resize(N, vector<vector<int>>(N));
+  B = computeB(); // その地点の周辺の家、勤務地リスト
+  D.resize(M);
+  D = computeD(); // distance
+
+  Solver solver;
   Result result = solver.solve();
   cout << result.toString() << "\n";
   cerr << "score=" << result.score << "\n";
