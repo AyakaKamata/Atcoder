@@ -41,7 +41,7 @@ void sortPosByD(vector<Pos> &candidates, const Pos station) {
         int d2 = abs(p2.first - sx) + abs(p2.second - sy);
         return (d1 == d2) ? (A[p1.first][p1.second] > A[p2.first][p2.second])
                           : (d1 < d2);
-  });
+      });
 }
 
 class Action {
@@ -698,7 +698,7 @@ vector<vector<int>> computeA() {
         if (distancePos(home[p], {i, j}) <= 2)
           count += D[p];
         // workplace[p] も同様
-        if (distancePos(home[p], {i, j}) <= 2)
+        if (distancePos(workplace[p], {i, j}) <= 2)
           count += D[p];
       }
       A[i][j] = count;
