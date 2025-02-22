@@ -93,6 +93,7 @@
     "variant": "cpp",
     "text_encoding": "cpp",
     "generator": "cpp",
-    "print": "cpp"
-  },
+    "print": "cpp",
+    "*.def": "cpp"
+  }
 }
