@@ -150,23 +150,24 @@ int main() {
   cin.tie(nullptr);
 
   string S;
-  cin >> S;
+  in(S);
 
-  for (int i = S.size() - 1; i >= 1; i--) {
+  rrep(i, S.size() - 1, 1) {
     if (S[i] == 'A') {
       bool found = false;
       int tmp = i;
-      while (i > 0 && S[i - 1] == 'W') {
+      while (i - 1 >= 0 && S[i - 1] == 'W') {
         i--;
-        S[i] = 'A';
+        S[i] = 'C';
         found = true;
       }
       if (found) {
         S[tmp] = 'C';
+        S[i]='A';
       }
     }
   }
 
-  cout << S << '\n';
+  out(S);
   return 0;
 }

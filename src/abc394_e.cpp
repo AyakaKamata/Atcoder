@@ -145,65 +145,71 @@ vector<pair<char, int>> rle(const string &s) {
                         OwOkaomoji
                      ｡˚ (¦3ꇤ )3 ⋆｡˚✩
 ----------------------------------------------------------*/
+
+ll N; // 頂点数と辺数
+void bfs(const matrix &G, ll start, vector<ll> &dist) {
+  ll n = G.size();
+  queue<ll> que;
+
+  dist[start] = 0; // 初期ノード
+  que.push(start);
+
+  while (!que.empty()) {
+    ll v = que.front();
+    que.pop();
+
+    for (ll nv : G[v]) {
+      ll x = nv / N, y = nv % N;
+
+      ll w;
+      if (v == start) {
+        w = (x == y) ? 0 : 1;
+
+      } else {
+        w = 2;
+      }
+      if (dist[nv] > dist[v] + w) {
+        dist[nv] = dist[v] + w;
+        que.push(nv);
+      }
+    }
+  }
+}
+
 int main() {
-  ios::sync_with_stdio(false);
-  cin.tie(nullptr);
 
-  int N;
   cin >> N;
-  vector<string> grid(N);
-  for (int i = 0; i < N; i++) {
-    cin >> grid[i];
-  }
+  vector<string> S(N);
+  rep(i, 0, N) in(S[i]);
 
-  const int INF = 1e9;
-  vector<vector<int>> dp(N, vector<int>(N, INF));
-  queue<pair<int, int>> qu;
-
-  // 初期状態：空パス（u==v）は0
-  for (int i = 0; i < N; i++) {
-    dp[i][i] = 0;
-    qu.push({i, i});
+  matrix G(N * N + 1);
+  rep(i, 0, N) { G[N * N].push_back(i * N + i); }
+  for (ll i = 0; i < N * N; ++i) { // 辺の入力
+    ll u = i / N, v = i % N;
+    if (u == v) {
+      continue;
+    }
+    if (S[u][v] != '-') {
+      G[N * N].push_back(i);
+    }
   }
-  for (int u = 0; u < N; u++) {
-    for (int v = 0; v < N; v++) {
-      if (grid[u][v] != '-') {
-        if (dp[u][v] > 1) {
-          dp[u][v] = 1;
-          qu.push({u, v});
-        }
-      }
+  rep(i, 0, N * N) rep(j, 0, N * N) {
+    ll k = j / N, l = j % N;
+    if (S[k][i / N] != '-' && S[i % N][l] != '-' &&
+        S[k][i / N] == S[i % N][l]) {
+      G[i].push_back(j);
     }
   }
 
-  // BFS：状態 (u, v) から拡張
-  while (!qu.empty()) {
-    auto [u, v] = qu.front();
-    qu.pop();
-    int d = dp[u][v];
-    // u側をひとつ前に伸ばす頂点 p と、v側をひとつ後ろに伸ばす頂点 q を全探索
-    for (int p = 0; p < N; p++) {
-      if (grid[p][u] == '-')
-        continue;
-      char c = grid[p][u]; // u に入る辺のラベル
-      for (int q = 0; q < N; q++) {
-        if (grid[v][q] != c)
-          continue; // vからqへの辺も同じ文字である必要
-        if (dp[p][q] > d + 2) {
-          dp[p][q] = d + 2;
-          qu.push({p, q});
-        }
+  vector<ll> dist(N * N + 1, INFL); // 距離配列
+  // rep(i, 0, N) dist[i * N + i] = 0;
+  bfs(G, N * N, dist);
+  for (ll v = 0; v < N; ++v) {
+    rep(j, 0, N) {
+      cout << ((dist[v * N + j] == INFL) ? -1 : dist[v * N + j]);
+      if (j != N - 1) {
+        cout << " ";
       }
-    }
-  }
-
-  // 出力：dp[i][j] が INF なら -1 を出力
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      if (dp[i][j] == INF)
-        cout << -1 << " ";
-      else
-        cout << dp[i][j] << " ";
     }
     cout << "\n";
   }
