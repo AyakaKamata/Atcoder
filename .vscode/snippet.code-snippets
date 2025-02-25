@@ -1008,5 +1008,36 @@
 			"\treturn 0;",
 			"}"
 		],
+	},
+	"lis": {
+		"prefix": "lis",
+		"body": [
+			"// 関数: lisLength",
+			"// 説明: 与えられた整数のシーケンスから最長増加部分列 (LIS) の長さを計算する",
+			"// 引数: seq = 整数のベクトル",
+			"// 戻り値: LIS の長さ (整数)",
+			"ll lislen(const onevec& seq) {",
+			"    // 空のシーケンスの場合は 0 を返す",
+			"    if (seq.empty()) return 0;",
+			"",
+			"    onevec lis;  // 現在のLISを格納するベクトル",
+			"    lis.push_back(seq[0]);",
+			"",
+			"    // シーケンスの2番目の要素から処理を開始",
+			"    rep(i,1,lsize(seq)){",
+			"        // 現在の要素がlisの最後の要素より大きい場合、末尾に追加",
+			"        if (seq[i] > lis.back()) {",
+			"            lis.push_back(seq[i]);",
+			"        } else {",
+			"            // そうでない場合、lower_boundを用いてseq[i]が入るべき位置を探す",
+			"            auto pos = lower_bound(lis.begin(), lis.end(), seq[i]);",
+			"            *pos = seq[i];  // 該当位置の値を更新",
+			"        }",
+			"    }",
+			"",
+			"    // lisに格納された要素数がLISの長さになる",
+			"    return lis.size();",
+			"}"
+		],
 	}
 }
