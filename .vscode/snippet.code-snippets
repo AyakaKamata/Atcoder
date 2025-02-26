@@ -46,7 +46,7 @@
 			"template <typename T> bool ifbit(T number, ll bit) {",
 			"  return (number & (1LL << bit)) != 0;",
 			"}",
-			"template <typename T> ll twice(const T &a) { return a * a; }",
+			"template <typename T> T twice(const T &a) { return a * a; }",
 			"template <typename T> T bits_count(T v) { return __builtin_popcountll(v); }",
 			"",
 			"template <typename T> T factorial(T n) {",
@@ -347,6 +347,24 @@
 			"}",
 			"    $1",
 		]
+	},
+	"countdiv": {
+		"prefix": "count_div",
+		"body": [
+			"// 約数の個数を求める関数",
+			"vector<long long> count_divisors(long long N) {",
+			"    vector<long long> divisors(N + 1, 0); // 初期化（全て 0）",
+			"",
+			"    // 各数値 i に対して、その倍数にカウントを追加",
+			"    for (long long i = 1; i <= N; i++) {",
+			"        for (long long j = i; j <= N; j += i) {",
+			"            divisors[j]++; // j は i の倍数だから約数にカウント",
+			"        }",
+			"    }",
+			"",
+			"    return divisors;",
+			"}"
+		],
 	},
 	"prime_fac": {
 		"prefix": "prime_fac",
