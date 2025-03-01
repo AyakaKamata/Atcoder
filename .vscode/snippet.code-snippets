@@ -320,7 +320,7 @@
 			"",
 			"        auto condition = [&](ll mid) { return A[mid] >= x; };",
 			"",
-			"        ll idx = my_bin(llsize(A), -1, condition);",
+			"        ll idx = my_bin(lsize(A), -1, condition);",
 			"        cout << n - idx << endl;",
 			"    }",
 			"",
