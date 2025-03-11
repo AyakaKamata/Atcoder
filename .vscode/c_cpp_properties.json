@@ -8,7 +8,8 @@
         "C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/14.2.0/../../../../include/c++/14.2.0/backward",
         "C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/14.2.0/include",
         "C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/14.2.0/../../../../include",
-        "C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/14.2.0/include-fixed"
+        "C:/msys64/mingw64/bin/../lib/gcc/x86_64-w64-mingw32/14.2.0/include-fixed",
+        "../ac-library"
       ],
       "intelliSenseMode": "windows-gcc-x64",
       "compilerPath": "C:/msys64/mingw64/bin/g++.exe"
