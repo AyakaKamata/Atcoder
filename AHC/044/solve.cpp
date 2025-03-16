@@ -88,14 +88,75 @@ int main() {
     S.insert({newDemand, idx});
     demand[idx] = newDemand;
   }
+  // 初期割当後の総評価値：残余需要の絶対値の和
+  auto totalObjective = [&]() -> int {
+    int sum = 0;
+    for (int y = 0; y < N; y++) {
+      sum += abs(demand[y]);
+    }
+    return sum;
+  };
 
-  // // 全状態の需要が0になっているかチェック
-  // for (int y = 0; y < N; y++) {
-  //   if (demand[y] != 0) {
-  //     cerr << "状態 " << y << " の残需要: " << demand[y] << endl;
-  //     return 1;
-  //   }
-  // }
+  int obj = totalObjective();
+  // cout << "初期の評価 (残余需要の絶対値の和): " << obj << endl;
+
+  // 局所探索による改善
+  bool improved = true;
+  while (improved) {
+    improved = false;
+    // 奇数回用の割当について局所探索
+    for (int x = 0; x < N; x++) {
+      int supply = m[x];
+      int currCandidate = a[x];
+      // 現在の2状態の評価：候補 currCandidate と候補 candidate
+      // で評価するための変数は後で計算
+      for (int candidate = 0; candidate < N; candidate++) {
+        if (candidate == currCandidate)
+          continue;
+        // シミュレーション：現在割り当てられている候補 currCandidate の demand
+        // を supply 分戻し， candidate の demand を supply 分差し引く
+        int newDemandCurr = demand[currCandidate] + supply;
+        int newDemandCand = demand[candidate] - supply;
+        int oldContribution =
+            abs(demand[currCandidate]) + abs(demand[candidate]);
+        int newContribution = abs(newDemandCurr) + abs(newDemandCand);
+        if (newContribution < oldContribution) {
+          // 改善あり．更新する
+          a[x] = candidate;
+          // 更新：currCandidate の需要を newDemandCurr, candidate の需要を
+          // newDemandCand
+          demand[currCandidate] = newDemandCurr;
+          demand[candidate] = newDemandCand;
+          obj = totalObjective();
+          improved = true;
+          // 変更後は break して次の供給アイテムに進む
+          break;
+        }
+      }
+    }
+    // 偶数回用の割当について局所探索
+    for (int x = 0; x < N; x++) {
+      int supply = n[x];
+      int currCandidate = b[x];
+      for (int candidate = 0; candidate < N; candidate++) {
+        if (candidate == currCandidate)
+          continue;
+        int newDemandCurr = demand[currCandidate] + supply;
+        int newDemandCand = demand[candidate] - supply;
+        int oldContribution =
+            abs(demand[currCandidate]) + abs(demand[candidate]);
+        int newContribution = abs(newDemandCurr) + abs(newDemandCand);
+        if (newContribution < oldContribution) {
+          b[x] = candidate;
+          demand[currCandidate] = newDemandCurr;
+          demand[candidate] = newDemandCand;
+          obj = totalObjective();
+          improved = true;
+          break;
+        }
+      }
+    }
+  }
 
   // 結果出力
   for (int x = 0; x < N; x++) {
