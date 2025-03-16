@@ -173,40 +173,53 @@ class TimeKeeper {
 private:
   std::chrono::high_resolution_clock::time_point start_time_;
   std::chrono::high_resolution_clock::time_point before_time_;
-  int64_t time_threshold_;
-  int64_t end_turn_;
-  int64_t turn_;
+  int64_t time_threshold_; // 全体の制限時間（ミリ秒）
+  int64_t end_turn_;       // 最大ターン数
+  int64_t turn_;           // 現在のターン
 
 public:
-  // ターン制の問題で全ターン含めての制限時間（ミリ秒）と最大ターン数を指定し、
-  //  インスタンスをつくる。
+  // コンストラクタ：全体の制限時間 (ms) と最大ターン数を指定する
   TimeKeeper(const int64_t &time_threshold, const int64_t end_turn)
       : start_time_(std::chrono::high_resolution_clock::now()),
         time_threshold_(time_threshold), end_turn_(end_turn), turn_(0) {
-    // メンバイニシャライザで初期化されたstart_time_の値を使うため、before_time_はメンバイニシャライザではなくコピーをする
     before_time_ = start_time_;
   }
 
-  // ターンとターン開始時間を更新する
+  // ターンを更新するとともに、その時点の時刻を記録する
   void setTurn(const int t) {
     turn_ = t;
-    this->before_time_ = std::chrono::high_resolution_clock::now();
+    before_time_ = std::chrono::high_resolution_clock::now();
   }
 
-  // 各ターンに割り振られた制限時間を超過したか判定する。
+  // 経過時間（全体の開始からの経過時間、ミリ秒単位）を返す
+  int64_t getElapsedTime() const {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto whole_diff = now - start_time_;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(whole_diff)
+        .count();
+  }
+
+  // 全体の許容時間（ミリ秒）を返す
+  int64_t getTotalTime() const { return time_threshold_; }
+
+  // 現在のターンに割り当てられた時間（残りの全体時間を残りターン数で均等に割ったもの）を用いて
+  // このターンの経過時間がその閾値を超えているか判定する
   bool isTimeOver() {
     auto now = std::chrono::high_resolution_clock::now();
-    auto whole_diff = now - this->start_time_;
-    auto whole_count =
+    auto whole_diff = now - start_time_;
+    int64_t whole_count =
         std::chrono::duration_cast<std::chrono::milliseconds>(whole_diff)
             .count();
-    auto last_diff = now - this->before_time_;
-    auto last_count =
+
+    auto last_diff = now - before_time_;
+    int64_t last_count =
         std::chrono::duration_cast<std::chrono::milliseconds>(last_diff)
             .count();
 
-    auto remaining_time = time_threshold_ - whole_count;
-    auto now_threshold = remaining_time / (end_turn_ - this->turn_);
+    int64_t remaining_time = time_threshold_ - whole_count;
+    // 残りのターン数（end_turn_ -
+    // current_turn_）で均等に割った時間を現在のターンの閾値とする
+    int64_t now_threshold = remaining_time / (end_turn_ - turn_);
     return last_count >= now_threshold;
   }
 };
@@ -307,35 +320,35 @@ int main() {
 
   // 初期目的関数の計算
   int currentObj = calcObjective(D, a, b, m, n, N);
-
   // シミュレーテッドアニーリングのパラメータ
-  double T0 = 1000.0;       // 初期温度
-  double T_end = 1e-3;      // 終了温度
-  int iterations = 2000000; // 総反復回数
+  double T0_val = 1000.0; // 初期温度
+  double T_end = 1e-3;    // 終了温度
+  // iterations はあくまで最大試行回数。今回は時間で終了させるので iterations
+  // は大きな値に設定
+  using ll = long long;
+  ll iterations = 10000000000LL;
 
-  // 乱数生成器の用意
+  // 乱数生成器
   mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
   uniform_int_distribution<int> stateDist(0, N - 1);
   uniform_int_distribution<int> coin(0, 1); // 0: a, 1: b
-  uniform_int_distribution<int> assignCandidate(
-      0, N - 2); // 新たな割当候補（後で調整）
   uniform_real_distribution<double> realDist(0.0, 1.0);
 
-  double temp = T0;
-  double coolingRate = pow(T_end / T0, 1.0 / iterations);
-  TimeKeeper time_keeper{2000, 1};
-  time_keeper.setTurn(0);
+  // TimeKeeper の初期化（ここでは 2000 ミリ秒 = 2秒間とする）
+  TimeKeeper time_keeper(1950, 1);
 
+  time_keeper.setTurn(0);
   // シミュレーテッドアニーリング開始
-  for (int iter = 0; iter < iterations; iter++) {
-    if (time_keeper.isTimeOver()) {
-      break;
-    }
+  // 温度は時間経過に合わせて計算するので、各 iteration 毎に温度を更新
+  while (!time_keeper.isTimeOver()) {
+    // 現在の温度は elapsed/total に応じて更新
+    double elapsed = static_cast<double>(time_keeper.getElapsedTime());
+    double total = static_cast<double>(time_keeper.getTotalTime());
+    double temp = T0_val * pow(T_end / T0_val, elapsed / total);
+
     // 変更対象：ランダムに状態 x と aかb を選択
     int x = stateDist(rng);
     bool useA = (coin(rng) == 0);
-
-    // 現在の割当先
     int currentAssign = useA ? a[x] : b[x];
 
     // 新しい候補をランダムに選ぶ（currentAssign を除く）
@@ -344,28 +357,7 @@ int main() {
       newAssign = stateDist(rng);
     }
 
-    // 現在の解から目的関数の局所的な変化を計算するために，
-    // まず、現在の割当での影響を取り除く
-    // （flow[y] への寄与が変化するのは currentAssign と newAssign のみ）
-    int flowCurrent = 0, flowNew = 0;
-    if (useA)
-      flowCurrent = m[x];
-    else
-      flowCurrent = n[x];
-
-    // 現在の残余は D[currentAssign] - (flow at currentAssign)
-    // しかし、全体の目的関数は sum_y |residual[y]| で，影響は currentAssign と
-    // newAssign にのみ変わるので、 差分 delta = (newResidual(currentAssign) +
-    // newResidual(newAssign)) - (oldResidual(currentAssign) +
-    // oldResidual(newAssign)) ※ただし、oldResidual = D[y] - currentFlow[y] ,
-    // newResidual(currentAssign) = oldResidual(currentAssign) + flowCurrent
-    //      newResidual(newAssign) = oldResidual(newAssign) - flowCurrent
-    // delta = (oldResidual(currentAssign)+flowCurrent +
-    // oldResidual(newAssign)-flowCurrent) - (oldResidual(currentAssign) +
-    // oldResidual(newAssign)) = 0　となるようにはならない．
-    // そこで、正しくは現状のflow計算を全体で行ってから再計算することにする（Nはそれほど大きくないと仮定）
-
-    // 一旦候補解を作る
+    // 候補解を作成
     vector<int> a_new = a;
     vector<int> b_new = b;
     if (useA)
@@ -376,18 +368,13 @@ int main() {
     int newObj = calcObjective(D, a_new, b_new, m, n, N);
     int delta = newObj - currentObj;
 
-    // 採用判定
     if (delta <= 0 || realDist(rng) < exp(-delta / temp)) {
-      // 採用
       if (useA)
         a[x] = newAssign;
       else
         b[x] = newAssign;
       currentObj = newObj;
     }
-
-    // 温度更新
-    temp *= coolingRate;
   }
 
   for (int x = 0; x < N; x++) {
